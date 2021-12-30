@@ -8,7 +8,7 @@ on:
         required: true
 
 jobs:
-  start:
+  begin-interview:
     runs-on: ubuntu-latest
     steps:
 
@@ -31,7 +31,7 @@ jobs:
             name: repo,
             private: true,
             auto_init: true
-          });
+          })
 
           core.setOutput('repo-owner', context.repo.owner)
           core.setOutput('repo', repo)
@@ -49,15 +49,15 @@ jobs:
             owner: context.repo.owner,
             repo: repo,
             username: user,
-          });
+          })
 
     - uses: actions/github-script@v5
       id: upload-files-to-repo
       with:
         github-token: ${{ secrets.PAT }}
         script: |
-          const fs = require("fs");
-          const path = require('path');
+          const fs = require("fs")
+          const path = require('path')
           
           const repoOwner = "${{ steps.create-repo.outputs.repo-owner }}"
           const repo = "${{ steps.create-repo.outputs.repo }}"
@@ -66,13 +66,13 @@ jobs:
             owner: repoOwner,
             repo: repo,
             ref: 'heads/main'
-          });
+          })
 
           const { data: commit } = await github.rest.git.getCommit({
             owner: repoOwner,
             repo: repo,
             commit_sha: ref.object.sha,
-          });
+          })
 
           const patterns = ['**/*.go', '**/go.mod']
           const globber = await glob.create(patterns.join('\n'))
@@ -117,4 +117,4 @@ jobs:
             ref: 'heads/main',
             sha: newCommit.sha,
             force: true
-          });
+          })

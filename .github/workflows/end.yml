@@ -11,7 +11,7 @@ on:
         required: true
 
 jobs:
-  end:
+  end-interview:
     runs-on: ubuntu-latest
     steps:
 
@@ -27,4 +27,4 @@ jobs:
             owner: context.repo.owner,
             repo: repo,
             username: user,
-          });
+          })
