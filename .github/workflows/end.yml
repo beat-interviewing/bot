@@ -1,0 +1,29 @@
+name: 'End interview'
+
+on:
+  workflow_dispatch:
+    inputs:
+      github_user:
+        description: 'GitHub User'
+        required: true
+      github_repo:
+        description: 'GitHub Repository'
+        required: true
+
+jobs:
+  end:
+    runs-on: ubuntu-latest
+    steps:
+
+    - uses: actions/github-script@v5
+      id: create-repo
+      with:
+        script: |
+          const user = "${{ github.event.inputs.github_user }}"
+          const repo = "${{ github.event.inputs.github_repo }}"
+        
+          return await github.rest.repos.removeCollaborator({
+            owner: context.repo.owner,
+            repo: repo,
+            username: user,
+          });
