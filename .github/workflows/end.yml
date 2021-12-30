@@ -18,6 +18,7 @@ jobs:
     - uses: actions/github-script@v5
       id: create-repo
       with:
+        github-token: ${{ secrets.PAT }}
         script: |
           const user = "${{ github.event.inputs.github_user }}"
           const repo = "${{ github.event.inputs.github_repo }}"

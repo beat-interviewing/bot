@@ -1,4 +1,4 @@
-name: 'Start the interview'
+name: 'Begin the interview'
 
 on:
   workflow_dispatch:
@@ -20,6 +20,7 @@ jobs:
     - uses: actions/github-script@v5
       id: create-repo
       with:
+        github-token: ${{ secrets.PAT }}
         script: |
           const user = "${{ github.event.inputs.github_user }}"
           const time = 1640867103632 // Date.now()
@@ -38,6 +39,7 @@ jobs:
     - uses: actions/github-script@v5
       id: add-collaborator-to-repo
       with:
+        github-token: ${{ secrets.PAT }}
         script: |
           const user = "${{ github.event.inputs.github_user }}"
           const repoOwner = "${{ steps.create-repo.outputs.repo-owner }}"
@@ -52,6 +54,7 @@ jobs:
     - uses: actions/github-script@v5
       id: upload-files-to-repo
       with:
+        github-token: ${{ secrets.PAT }}
         script: |
           const fs = require("fs");
           const path = require('path');
