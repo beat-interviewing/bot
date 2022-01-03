@@ -33,8 +33,8 @@ jobs:
           const user = "${{ github.event.inputs.github_user }}"
           const assignment = "${{ github.event.inputs.assignment }}"
           
-          const time = 1640867103632 // Date.now()
-          const repo = `${context.repo.repo}-${user}-${assignment}-${time}`
+          const rand = (Math.random() + 1).toString(36).substring(2, 5)
+          const repo = `${context.repo.repo}-${user}-${assignment}-${rand}`
         
           await github.rest.repos.createInOrg({
             org: context.repo.owner,
