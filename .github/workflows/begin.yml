@@ -92,7 +92,7 @@ jobs:
 
             console.log(file)
             
-            if (fs.lstatSync(path_string).isDirectory()) {
+            if (fs.lstatSync(file).isDirectory()) {
               continue;
             }
 
