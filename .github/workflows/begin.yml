@@ -106,7 +106,7 @@ jobs:
             })
 
             files.push({
-              path: path.relative("${{ github.workspace }}/${assignment}", file),
+              path: path.relative(`${{ github.workspace }}/${assignment}`, file),
               mode: '100644',
               type: 'blob',
               sha: blob.sha
