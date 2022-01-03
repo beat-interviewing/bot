@@ -4,18 +4,18 @@ This repository is a proof of concept demonstrating the automation of interview
 workflows. It is intended to improve the time taken by reviewers to grade
 take-home assignments, and make it easier on candidates when submitting them.
 
-## Begin Interview Workflow
+## Coding Challenge
 
-This workflow creates a new repository under the `acme-interviewing`
-organization and invites the candidate as a collaborator to the repository. Then
-commits certain files to the newly created repository.
+The coding challenge is ACME's usual take-home assignment (THA).
 
-## Pull Request Automation Workflow
+### Create coding challenge
 
-In order to help both candidates as well as interviewers, this workflow will perform certain
+This workflow initiates the coding challenge creates a new repository under the
+`acme-interviewing` organization and invites the candidate as a collaborator to
+the repository. Then commits certain files to the newly created repository.
 
-## End Interview Workflow
+### End coding challenge
 
-This workflow ends the interview by revoking the candidates access to the
+This workflow ends the coding challenge by revoking the candidates access to the
 repository. At the time of writing this is performed manually by specifying the
 repository and candidate in question.

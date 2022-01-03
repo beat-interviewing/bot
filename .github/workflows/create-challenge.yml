@@ -1,9 +1,9 @@
-name: 'Begin the interview'
+name: 'Create coding challenge'
 
 on:
   workflow_dispatch:
     inputs:
-      github_user:
+      user:
         description: 'GitHub user'
         required: true
       assignment:
@@ -15,8 +15,8 @@ on:
         - 'go'
 
 jobs:
-  begin-interview:
-    name: 'Begin interview'
+  create-challenge:
+    name: 'Create challenge'
     runs-on: ubuntu-latest
     steps:
 
@@ -30,7 +30,7 @@ jobs:
       with:
         github-token: ${{ secrets.PAT }}
         script: |
-          const user = "${{ github.event.inputs.github_user }}"
+          const user = "${{ github.event.inputs.user }}"
           const assignment = "${{ github.event.inputs.assignment }}"
           
           const rand = (Math.random() + 1).toString(36).substring(2, 5)
@@ -51,7 +51,7 @@ jobs:
       with:
         github-token: ${{ secrets.PAT }}
         script: |
-          const user = "${{ github.event.inputs.github_user }}"
+          const user = "${{ github.event.inputs.user }}"
           const repoOwner = "${{ steps.create-repo.outputs.repo-owner }}"
           const repo = "${{ steps.create-repo.outputs.repo }}"
         
@@ -86,7 +86,11 @@ jobs:
             commit_sha: ref.object.sha,
           })
 
-          const patterns = [`${assignment}/**`, 'input.csv']
+          const patterns = [
+            `${assignment}/**`, 
+            `!${assignment}/**/review.yaml`
+          ]
+
           const globber = await glob.create(patterns.join('\n'))
           
           const files = []

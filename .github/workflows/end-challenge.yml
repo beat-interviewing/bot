@@ -1,28 +1,28 @@
-name: 'End interview'
+name: 'End coding challenge'
 
 on:
   workflow_dispatch:
     inputs:
-      github_user:
+      user:
         description: 'GitHub user'
         required: true
-      github_repo:
+      repo:
         description: 'GitHub repository'
         required: true
 
 jobs:
-  end-interview:
-    name: 'End interview'
+  end-challenge:
+    name: 'End challenge'
     runs-on: ubuntu-latest
     steps:
 
     - uses: actions/github-script@v5
-      id: create-repo
+      id: revoke-access-to-repo
       with:
         github-token: ${{ secrets.PAT }}
         script: |
-          const user = "${{ github.event.inputs.github_user }}"
-          const repo = "${{ github.event.inputs.github_repo }}"
+          const user = "${{ github.event.inputs.user }}"
+          const repo = "${{ github.event.inputs.repo }}"
         
           return await github.rest.repos.removeCollaborator({
             owner: context.repo.owner,
