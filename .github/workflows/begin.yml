@@ -32,7 +32,7 @@ jobs:
         script: |
           const user = "${{ github.event.inputs.github_user }}"
           const time = 1640867103632 // Date.now()
-          const repo = `${context.repo.repo}-${user}-${time}`
+          const repo = `${context.repo.repo}-${user}-${assignment}-${time}`
         
           await github.rest.repos.createInOrg({
             org: context.repo.owner,
@@ -89,12 +89,12 @@ jobs:
           
           const files = []
           for await (const file of globber.globGenerator()) {
-
-            console.log(file)
             
             if (fs.lstatSync(file).isDirectory()) {
               continue;
             }
+
+            console.log(file)
 
             const content = fs.readFileSync(file, 'utf8')
             
