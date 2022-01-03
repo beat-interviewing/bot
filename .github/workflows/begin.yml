@@ -16,6 +16,7 @@ on:
 
 jobs:
   begin-interview:
+    name: 'Begin interview'
     runs-on: ubuntu-latest
     steps:
 
@@ -89,6 +90,12 @@ jobs:
           const files = []
           for await (const file of globber.globGenerator()) {
 
+            console.log(file)
+            
+            if (fs.lstatSync(path_string).isDirectory()) {
+              continue;
+            }
+
             const content = fs.readFileSync(file, 'utf8')
             
             const { data: blob } = await github.rest.git.createBlob({
@@ -99,7 +106,7 @@ jobs:
             })
 
             files.push({
-              path: path.relative("${{ github.workspace }}", file),
+              path: path.relative("${{ github.workspace }}/${assignment}", file),
               mode: '100644',
               type: 'blob',
               sha: blob.sha

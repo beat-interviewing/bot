@@ -12,6 +12,7 @@ on:
 
 jobs:
   end-interview:
+    name: 'End interview'
     runs-on: ubuntu-latest
     steps:
 
