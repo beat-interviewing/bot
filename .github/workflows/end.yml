@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       github_user:
-        description: 'GitHub User'
+        description: 'GitHub user'
         required: true
       github_repo:
-        description: 'GitHub Repository'
+        description: 'GitHub repository'
         required: true
 
 jobs:

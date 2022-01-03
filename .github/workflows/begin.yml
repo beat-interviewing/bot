@@ -4,8 +4,15 @@ on:
   workflow_dispatch:
     inputs:
       github_user:
-        description: 'GitHub User'
+        description: 'GitHub user'
         required: true
+      assignment:
+        description: 'Assignment type'
+        required: true
+        type: choice
+        default: 'go'
+        options: 
+        - 'go'
 
 jobs:
   begin-interview:
@@ -62,6 +69,8 @@ jobs:
           const repoOwner = "${{ steps.create-repo.outputs.repo-owner }}"
           const repo = "${{ steps.create-repo.outputs.repo }}"
 
+          const assignment = "${{ github.event.inputs.assignment }}"
+
           const { data: ref } = await github.rest.git.getRef({
             owner: repoOwner,
             repo: repo,
@@ -74,7 +83,7 @@ jobs:
             commit_sha: ref.object.sha,
           })
 
-          const patterns = ['**/*.go', '**/go.mod']
+          const patterns = [`${assignment}/**`, 'input.csv']
           const globber = await glob.create(patterns.join('\n'))
           
           const files = []
