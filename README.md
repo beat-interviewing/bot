@@ -41,7 +41,7 @@ should match a repository under the
 [acme-interviewing](https://github.com/acme-interviewing) organization. This
 repository **must** be a template repository.
 
-![challenge](challenge.png)
+![challenge](img/challenge.png)
 
 At this point the candidate should have received an invitation to collaborate on the newly created repository.
 
@@ -55,7 +55,7 @@ To end the challenge, we'll use the `/end` command in the same issue thread.
 
 Where `<repository>` is the challenges repository name.
 
-![challenge-end](challenge-end.png)
+![challenge-end](img/challenge-end.png)
 
 At this point, the candidate no longer has access to the challenge and is therefore unable to commit any new changes.
 
