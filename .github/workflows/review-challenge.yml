@@ -9,6 +9,13 @@ on:
       repo:
         description: 'GitHub repository'
         required: true
+      assignment:
+        description: 'Assignment type'
+        required: true
+        type: choice
+        default: 'go'
+        options: 
+        - 'go'
 
 jobs:
   review-challenge:
@@ -22,15 +29,12 @@ jobs:
         github-token: ${{ secrets.PAT }}
         script: |
           const user = "${{ github.event.inputs.reviewer }}"
+          const assignment = "${{ github.event.inputs.assignment }}"
+          const repoOwner = context.repo.owner
           const repo = "${{ github.event.inputs.repo }}"
         
           const fs = require("fs")
           const path = require('path')
-          
-          const repoOwner = "${{ steps.create-repo.outputs.repo-owner }}"
-          const repo = "${{ steps.create-repo.outputs.repo }}"
-
-          const assignment = "${{ github.event.inputs.assignment }}"
 
           const { data: ref } = await github.rest.git.getRef({
             owner: repoOwner,
@@ -44,7 +48,7 @@ jobs:
             commit_sha: ref.object.sha,
           })
 
-          const patterns = [`${assignment}/**/review.yaml`]
+          const patterns = [`${assignment}/**/review.yml`]
           const globber = await glob.create(patterns.join('\n'))
           
           const files = []
@@ -81,7 +85,7 @@ jobs:
           const { data: newCommit } = await github.rest.git.createCommit({
             owner: repoOwner,
             repo: repo,
-            message: "Initializing interview repository 🤖",
+            message: "Commit review automation workflows 🤖",
             tree: tree.sha
           })
 
