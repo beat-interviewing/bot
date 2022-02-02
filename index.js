@@ -11,7 +11,8 @@ const octokit = new ProbotOctokit({
 });
 
 /**
- * This is the main entrypoint to your Probot app
+ * This is the main entrypoint to our Probot app
+ * 
  * @param {import('probot').Probot} robot
  */
 module.exports = (robot) => {

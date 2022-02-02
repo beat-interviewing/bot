@@ -26,7 +26,7 @@ organization.
 
 As an example, lets prepare the coding challenge for
 [@robpike](https://github.com/robpike). He aced the recruiter screen but now its
-time to show is if he can handle our take-home assignment.
+time to show us if he can handle our take-home assignment.
 
 To kick off the process, [create an
 issue](https://github.com/acme-interviewing/interview/issues/new). The title
@@ -43,9 +43,12 @@ repository **must** be a template repository.
 
 ![challenge](img/challenge.png)
 
-At this point the candidate should have received an invitation to collaborate on the newly created repository.
+At this point the candidate should have received an invitation to collaborate on
+the newly created repository.
 
-The candidate is given sufficient (pre-determined) time to complete the assignment. To submit the assignment they must create a pull request asking to merge their changes to `main`.
+The candidate is given sufficient (pre-determined) time to complete the
+assignment. To submit the assignment they must create a pull request asking to
+merge their changes to `main`.
 
 To end the challenge, we'll use the `/end` command in the same issue thread.
 
@@ -57,7 +60,8 @@ Where `<repository>` is the challenges repository name.
 
 ![challenge-end](img/challenge-end.png)
 
-At this point, the candidate no longer has access to the challenge and is therefore unable to commit any new changes.
+At this point, the candidate no longer has access to the challenge and is
+therefore unable to commit any new changes.
 
 ## Copyright
 
