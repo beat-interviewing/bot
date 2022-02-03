@@ -349,6 +349,9 @@ class Challenge {
         owner: challenge.repoOwner,
         repo: challenge.repo
       });
+
+      await this.octokit.issues.update(context.issue({ 'state': 'closed' }));
+
       return await this.reply(context, messageChallengeDeleted(challenge.repo));
     } catch (error) {
       return await this.reply(context, messageChallengeDeleteFailed(challenge.repo, challenge.candidate));
@@ -531,7 +534,7 @@ Please bear with me as it might take me some time. I'm just a poor bot 🤖
 let messageChallengeReviewedUploaded = (repoOwner, repo, reviewer, assignment, paths) => {
   return `
 
-Ok, all set ${reviewer}! I've copied the following files from [${repoOwner}/${assignment}](/${repoOwner}/${assignment}) to [${repoOwner}/${repo}](/${repoOwner}/${repo}). 
+Ok, all set @${reviewer}! I've copied the following files from [${repoOwner}/${assignment}](/${repoOwner}/${assignment}) to [${repoOwner}/${repo}](/${repoOwner}/${repo}). 
 
 \`\`\`
 ${[paths.join('\n')]}
