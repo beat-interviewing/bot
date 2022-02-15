@@ -1,5 +1,6 @@
 const { Challenge } = require('./challenge');
-const { ProbotOctokit } = require("probot");
+const { I18n } = require('./i18n');
+const { ProbotOctokit, Probot } = require("probot");
 require('dotenv').config();
 
 const octokit = new ProbotOctokit({
@@ -10,16 +11,18 @@ const octokit = new ProbotOctokit({
   },
 });
 
+const i18n = new I18n('i18n', 'en');
+
 /**
  * This is the main entrypoint to our Probot app
  * 
- * @param {import('probot').Probot} robot
+ * @param {Probot} robot
  */
-module.exports = (robot) => {
+module.exports = async (robot) => {
 
-  robot.log.info("acme-interviewing[bot] starting...");
+  await i18n.load();
 
-  let challenge = new Challenge(octokit);
+  let challenge = new Challenge(octokit, i18n);
   challenge.register(robot);
 
   // For more information on building apps:

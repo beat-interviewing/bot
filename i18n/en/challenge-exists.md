@@ -1,0 +1,1 @@
+Challenge [{{repoOwner}}/{{repo}}](/{{repoOwner}}/{{repo}}) already created by @{{createdBy}}. To create a new one, file a new issue.

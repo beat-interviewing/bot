@@ -8,8 +8,9 @@ class Challenge {
    * 
    * @param {ProbotOctokit} octokit 
    */
-  constructor(octokit) {
+  constructor(octokit, i18n) {
     this.octokit = octokit;
+    this.i18n = i18n;
   }
 
   /**
@@ -30,7 +31,7 @@ class Challenge {
     // split the command to extract the username and assignment to use.
     let [candidate, assignment] = command.arguments.split(' ');
 
-    candidate = normalizeUsername(candidate);
+    candidate = candidate.replace('@', '');
 
     context.log.info({
       event: context.name,
@@ -45,11 +46,11 @@ class Challenge {
       // reject the request and instruct the caller to create a new issue.
       const challenge = await meta.get('challenge');
       if (challenge && challenge.repo !== '') {
-        return await this.reply(context, messageChallengeExists(
-          challenge.repoOwner,
-          challenge.repo,
-          challenge.createdBy
-        ));
+        return await this.reply(context, 'challenge-exists', {
+          repoOwner: challenge.repoOwner,
+          repo: challenge.repo,
+          createdBy: challenge.createdBy
+        });
       }
 
       // Create a random string for added entropy.
@@ -118,17 +119,17 @@ class Challenge {
         labels: [`assignment/${assignment}`]
       }));
 
-      return await this.reply(context, messageChallengeCreated(
+      return await this.reply(context, 'challenge-created', {
         repoOwner,
         repo,
         candidate
-      ));
+      });
     } catch (error) {
-      return await this.reply(context, messageChallengeCreateFailed(
+      return await this.reply(context, 'challenge-create-failed', {
         assignment,
         candidate,
         error
-      ));
+      });
     }
   }
 
@@ -149,7 +150,7 @@ class Challenge {
     // metadata.
     let challenge = await meta.get('challenge');
     if (!challenge) {
-      return await this.reply(context, messageChallengeUnknown());
+      return await this.reply(context, 'challenge-unknown');
     }
 
     context.log.info({
@@ -173,24 +174,25 @@ class Challenge {
 
       await meta.set('challenge', challenge);
 
-      return await this.reply(context, messageChallengeEnded(
-        challenge.repoOwner,
-        challenge.repo,
-        challenge.candidate
-      ));
+      return await this.reply(context, 'challenge-ended', challenge);
     } catch (error) {
-      return await this.reply(context, messageChallengeEndFailed(
-        challenge.candidate,
+      return await this.reply(context, 'challenge-end-failed', {
+        reviewer,
+        repoOwner: challenge.repoOwner,
+        repo: challenge.repo,
         error
-      ));
+      });
     }
   }
 
   /**
- * 
- * @param {Context} context 
- * @param {Command} command 
- */
+   * Join the challenge as a reviewer.
+   * 
+   * This command grants the reviewer access to the candidates challenge. 
+   * 
+   * @param {Context} context 
+   * @param {Command} command 
+   */
   async join(context, command) {
 
     const meta = metadata(context);
@@ -205,22 +207,30 @@ class Challenge {
     // issue metadata.
     let challenge = await meta.get('challenge');
     if (!challenge) {
-      return await this.reply(context, messageChallengeUnknown());
+      return await this.reply(context, 'challenge-unknown');
     }
 
     const reviewer = context.payload.issue.user.login;
 
     try {
       // Add the reviewer as a collaborator to the candidates challenge.
-      const { data: collaborator } = await context.octokit.repos.addCollaborator({
+      await context.octokit.repos.addCollaborator({
         owner: challenge.repoOwner,
         repo: challenge.repo,
         username: reviewer
       });
 
-      return await this.reply(context, messageChallengeDeleted(challenge.repo));
+      return await this.reply(context, 'challenge-joined', {
+        repoOwner: challenge.repoOwner,
+        repo: challenge.repo,
+        reviewer: reviewer
+      });
     } catch (error) {
-      return await this.reply(context, messageChallengeDeleteFailed(challenge.repo, challenge.candidate));
+      return await this.reply(context, 'challenge-join-failed', {
+        repoOwner: challenge.repoOwner,
+        repo: challenge.repo,
+        reviewer: reviewer
+      });
     }
   }
 
@@ -248,27 +258,25 @@ class Challenge {
 
     try {
       // Add the reviewer as a collaborator to the candidates challenge.
-      const { data: collaborator } = await context.octokit.repos.addCollaborator({
+      await context.octokit.repos.addCollaborator({
         owner: challenge.repoOwner,
         repo: challenge.repo,
         username: reviewer
       });
 
-      context.log.info({ collaborator });
-
-      await this.reply(context, messageChallengeReviewed(
-        challenge.repoOwner,
-        challenge.repo,
-        reviewer,
-        challenge.assignment
-      ));
+      await this.reply(context, 'challenge-reviewed', {
+        repoOwner: challenge.repoOwner,
+        repo: challenge.repo,
+        reviewer: reviewer,
+        assignment: challenge.assignment
+      });
     } catch (error) {
-      return await this.reply(context, messageChallengeReviewFailed(
-        challenge.repoOwner,
-        challenge.repo,
-        reviewer,
-        error
-      ));
+      return await this.reply(context, 'challenge-review-failed', {
+        repoOwner: challenge.repoOwner,
+        repo: challenge.repo,
+        reviewer: reviewer,
+        error: error
+      });
     }
 
     try {
@@ -305,20 +313,20 @@ class Challenge {
 
       const files = await copyFiles(challenge.config.review.copy.paths);
 
-      return await this.reply(context, messageChallengeReviewedUploaded(
-        challenge.repoOwner,
-        challenge.repo,
-        reviewer,
-        challenge.assignment,
-        files
-      ));
+      return await this.reply(context, 'challenge-reviewed-uploaded', {
+        repoOwner: challenge.repoOwner,
+        repo: challenge.repo,
+        reviewer: reviewer,
+        assignment: challenge.assignment,
+        files: files.join('\n')
+      });
     } catch (error) {
-      return await this.reply(context, messageChallengeReviewFailed(
-        challenge.repoOwner,
-        challenge.repo,
-        reviewer,
-        error
-      ));
+      return await this.reply(context, 'challenge-review-failed', {
+        repoOwner: challenge.repoOwner,
+        repo: challenge.repo,
+        reviewer: reviewer,
+        error: error
+      });
     }
   }
 
@@ -341,7 +349,7 @@ class Challenge {
     // from issue metadata.
     let challenge = await meta.get('challenge');
     if (!challenge) {
-      return await this.reply(context, messageChallengeUnknown());
+      return await this.reply(context, 'challenge-unknown');
     }
 
     try {
@@ -352,9 +360,9 @@ class Challenge {
 
       await this.octokit.issues.update(context.issue({ 'state': 'closed' }));
 
-      return await this.reply(context, messageChallengeDeleted(challenge.repo));
+      return await this.reply(context, 'challenge-deleted', challenge);
     } catch (error) {
-      return await this.reply(context, messageChallengeDeleteFailed(challenge.repo, challenge.candidate));
+      return await this.reply(context, 'challenge-delete-failed', challenge);
     }
   }
 
@@ -463,145 +471,23 @@ class Challenge {
    * @param {Command} command 
    */
   async help(context, command) {
-    return await this.reply(context, messageChallengeHelp());
+    return await this.reply(context, 'challenge-help');
   }
 
   register(robot) {
     commands(robot, 'challenge', this.create.bind(this));
     commands(robot, 'end', this.end.bind(this));
-    // commands(robot, 'join', this.join.bind(this));
-    // commands(robot, 'invite', this.invite.bind(this));
+    commands(robot, 'join', this.join.bind(this));
     commands(robot, 'review', this.review.bind(this));
     commands(robot, 'delete', this.delete.bind(this));
     commands(robot, 'help', this.help.bind(this));
   }
 
-  async reply(context, message) {
+  async reply(context, template, view) {
     return await context.octokit.issues.createComment(context.issue({
-      body: message,
+      body: this.i18n.render(template, view),
     }));
   }
 };
 
 module.exports.Challenge = Challenge;
-
-let normalizeUsername = (username) => {
-  return username.replace('@', '');
-};
-
-let messageChallengeExists = (repoOwner, repo, createdBy) => {
-  return `Challenge [${repoOwner}/${repo}](/${repoOwner}/${repo}) already created by @${createdBy}. To create a new one, file a new issue.`;
-};
-
-let messageChallengeCreated = (repoOwner, repo, candidate) => {
-  return `Created challenge [${repoOwner}/${repo}](/${repoOwner}/${repo}) and invited @${candidate} as a collaborator`;
-};
-
-let messageChallengeCreateFailed = (assignment, candidate, error) => {
-  return `Unable to create ${assignment} challenge for @${candidate}. ${messageErrorStack(error)}`;
-};
-
-let messageChallengeEnded = (repoOwner, repo, candidate) => {
-  return `Ended challenge for @${candidate}. They no longer have access to [${repoOwner}/${repo}](/${repoOwner}/${repo})`;
-};
-
-let messageChallengeEndFailed = (candidate, error) => {
-  return `Unable to end the challenge for @${candidate}. ${messageErrorStack(error)}`;
-};
-
-let messageChallengeUnknown = () => {
-  return `Unable to identify challenge. Metadata is either corrupt or missing`;
-};
-
-let messageChallengeDeleted = (challenge) => {
-  return `Deleted challenge ${challenge}`;
-};
-
-let messageChallengeDeleteFailed = (challenge, error) => {
-  return `Unable to delete challenge ${challenge}. ${messageErrorStack(error)}`;
-};
-
-let messageChallengeReviewed = (repoOwner, repo, reviewer, assignment) => {
-  return `
-@${reviewer} is now a collaborator on [${repoOwner}/${repo}](/${repoOwner}/${repo}). Happy reviewing!
-
-Meanwhile, I'll prepare the repository for review by copying files from the [${repoOwner}/${assignment}](/${repoOwner}/${assignment}) repo to help make reviewing easier!
-
-Please bear with me as it might take me some time. I'm just a poor bot 🤖
-`;
-};
-
-let messageChallengeReviewedUploaded = (repoOwner, repo, reviewer, assignment, paths) => {
-  return `
-
-Ok, all set @${reviewer}! I've copied the following files from [${repoOwner}/${assignment}](/${repoOwner}/${assignment}) to [${repoOwner}/${repo}](/${repoOwner}/${repo}). 
-
-\`\`\`
-${[paths.join('\n')]}
-\`\`\`
-`;
-};
-
-let messageChallengeReviewFailed = (repoOwner, repo, reviewer, error) => {
-  return `
-Unable to make @${reviewer} a collaborator on [${repoOwner}/${repo}](/${repoOwner}/${repo}). ${messageErrorStack(error)}`;
-};
-
-let messageErrorStack = (error) => {
-  return `
-
-\`\`\`
-${error.stack}
-\`\`\` 
-
-<details>
-  <summary>Request</summary>
-
-\`\`\`
-${error.request.method} ${error.request.url}
-
-${error.request.body}
-\`\`\`
-</details>
-
-<details>
-  <summary>Response</summary>
-  
-\`\`\`
-${JSON.stringify(error.response.data, null, '  ')}
-\`\`\`  
-</details>   
-`;
-};
-
-let messageChallengeHelp = () => {
-  return `
-Hey! I can help you facilitate coding challenge assignments with our candidates.
-
-To create a challenge for a candidate, use the \`/challenge\` command. It takes 
-the arguments \`candidate\` and \`assignment\`. Like so:
-
-> /challenge @username go-take-home
-
-To end the challenge, use the \`/end\` command. This will revoke the candidates 
-access to the challenge repository.
-
-> /end
-
-When you are ready to review, use the \`/review\` command. It will grant you 
-access to the challenge repository where you can review the challenge. It will 
-most likely be in the form of a pull request.
-
-> /review
-
-If for some reason you wish to delete a challenge, use the \`/delete\` command. It 
-will delete the repository. **Warning!** this action will irreversibly delete 
-the repository. Be careful when using this command.
-
-> /delete
-`;
-};
-
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}

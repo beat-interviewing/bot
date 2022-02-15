@@ -1,0 +1,1 @@
+Ended challenge for @{{candidate}}. They no longer have access to [{{repoOwner}}/{{repo}}](/{{repoOwner}}/{{repo}})
