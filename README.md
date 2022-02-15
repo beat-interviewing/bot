@@ -28,41 +28,57 @@ As an example, lets prepare the coding challenge for
 [@robpike](https://github.com/robpike). He aced the recruiter screen but now its
 time to show us if he can handle our take-home assignment.
 
+### Challenge a Candidate
+
 To kick off the process, [create an
 issue](https://github.com/acme-interviewing/interview/issues/new). The title
 wont't matter for now, but in the body we'll use the `/challenge` slash command.
-
-```
-/challenge <candidate> <assignment>
-```
 
 Where `<candidate>` is the GitHub username of the candidate and `<assignment>`
 should match a repository under the
 [acme-interviewing](https://github.com/acme-interviewing) organization. This
 repository **must** be a template repository.
 
-![challenge](img/challenge.png)
+![challenge](docs/img/challenge.png)
 
 At this point the candidate should have received an invitation to collaborate on
 the newly created repository.
 
-The candidate is given sufficient (pre-determined) time to complete the
-assignment. To submit the assignment they must create a pull request asking to
-merge their changes to `main`.
+### Ending the Challenge
 
-To end the challenge, we'll use the `/end` command in the same issue thread.
+Once the candidate is given sufficient time to complete the assignment, we can 
+end the assignment by revoking their access to the repository.
 
-```
-/end <candidate> <repository>
-```
+![challenge-end](docs/img/challenge-end.png)
 
-Where `<repository>` is the challenges repository name.
+The candidate no longer has access to the challenge and is therefore unable to 
+commit any new changes.
 
-![challenge-end](img/challenge-end.png)
+### Reviewing the Code
 
-At this point, the candidate no longer has access to the challenge and is
-therefore unable to commit any new changes.
+To assist reviewers in evaluating the assignment, the `/review` command comes in
+handy. It can copy files from the assignment template repository to the 
+candidates repository. These files may enable automation in the form of GitHub 
+Actions, or verification scripts.
 
-## Copyright
+![challenge-review](docs/img/challenge-review.png)
 
-© 2022 BEAT Research B.V.
+In the example pictured above, several files were committed to the candidates
+assignment. For the
+[`go`](https://github.com/acme-interviewing/go-take-home/tree/review) challenge,
+this includes the expected output, some automation workflows and scripts that
+help verify the solutions correctness and timing.
+
+Let's head over to the actions tab and inspect the output of these checks.
+
+![challenge-review-checks](docs/img/challenge-review-checks.png)
+
+From these checks we can see that the candidates submission had three mistakes
+in the resulting output as highlighted in red by the diff tool. Additionally the
+process took 11s to complete, which may be a little on the slow side.
+
+### Where next?
+
+This project is in active development. Therefore new commands may be added, or
+existing commands may be modified. For a full list of the supported
+functionality is found by invoking the `/help` command.
