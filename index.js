@@ -11,8 +11,6 @@ const octokit = new ProbotOctokit({
   },
 });
 
-const i18n = new I18n('i18n', 'en');
-
 /**
  * This is the main entrypoint to our Probot app
  * 
@@ -20,9 +18,10 @@ const i18n = new I18n('i18n', 'en');
  */
 module.exports = async (robot) => {
 
+  const i18n = new I18n('i18n', 'en');
   await i18n.load();
 
-  let challenge = new Challenge(octokit, i18n);
+  const challenge = new Challenge(octokit, i18n);
   challenge.register(robot);
 
   // For more information on building apps:
