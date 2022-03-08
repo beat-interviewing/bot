@@ -1,18 +1,19 @@
 {
   "action": "opened",
   "issue": {
-    "number": 1,
+    "number": 41,
     "user": {
-      "login": "hiimbex"
-    }
+      "login": "alexkappa"
+    },
+    "body": "/challenge @alexkappa go-take-home"
   },
   "repository": {
-    "name": "testing-things",
+    "name": "interview",
     "owner": {
-      "login": "hiimbex"
+      "login": "acme-interviewing"
     }
   },
   "installation": {
-    "id": 2
+    "id": 1
   }
 }

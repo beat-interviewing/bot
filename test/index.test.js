@@ -1,56 +1,58 @@
 const nock = require("nock");
-// Requiring our app implementation
-const myProbotApp = require("..");
+const robot = require("..");
 const { Probot, ProbotOctokit } = require("probot");
-// Requiring our fixtures
-const payload = require("./fixtures/issues.opened");
-const issueCreatedBody = { body: "Thanks for opening this issue!" };
-const fs = require("fs");
-const path = require("path");
+const { I18n } = require("../i18n");
 
-const privateKey = fs.readFileSync(
-  path.join(__dirname, "fixtures/mock-cert.pem"),
-  "utf-8"
-);
+describe("Challenger", () => {
 
-describe("My Probot app", () => {
   let probot;
 
   beforeEach(() => {
     nock.disableNetConnect();
     probot = new Probot({
       appId: 123,
-      privateKey,
-      // disable request throttling and retries for testing
+      githubToken: "xxx",
       Octokit: ProbotOctokit.defaults({
         retry: { enabled: false },
         throttle: { enabled: false },
       }),
     });
-    // Load our app into probot
-    probot.load(myProbotApp);
+    probot.load(robot);
   });
 
-  test("creates a comment when an issue is opened", async () => {
+  test("creates a challenge when invoked", async () => {
+    
     const mock = nock("https://api.github.com")
-      // Test that we correctly return a test token
-      .post("/app/installations/2/access_tokens")
-      .reply(200, {
-        token: "test",
-        permissions: {
-          issues: "write",
-        },
-      })
-
-      // Test that a comment is posted
-      .post("/repos/hiimbex/testing-things/issues/1/comments", (body) => {
-        expect(body).toMatchObject(issueCreatedBody);
+      .post("/repos/acme-interviewing/interview/issues/41/comments", (body) => {
+        expect(body).toMatchObject({
+          body: "Created challenge"
+        });
         return true;
       })
       .reply(200);
 
-    // Receive a webhook event
-    await probot.receive({ name: "issues", payload });
+    await probot.receive({
+      name: "issues",
+      payload: {
+        action: "opened",
+        issue: {
+          number: 41,
+          user: {
+            login: "alexkappa"
+          },
+          body: "/challenge @alexkappa go-take-home"
+        },
+        repository: {
+          name: "interview",
+          owner: {
+            login: "acme-interviewing"
+          }
+        },
+        installation: {
+          id: 1
+        }
+      }
+    });
 
     expect(mock.pendingMocks()).toStrictEqual([]);
   });
@@ -59,6 +61,52 @@ describe("My Probot app", () => {
     nock.cleanAll();
     nock.enableNetConnect();
   });
+});
+
+describe("i18n", () => {
+  
+  test("loads all templates", async () => {
+    const i18n = new I18n('i18n', 'en');
+    await i18n.load();
+
+    const message = i18n.render('challenge-create-failed', {
+      assignment: 'foo',
+      candidate: 'alexkappa',
+      error: {
+        stack: 'foo:1\nbar:12',
+        request: { method: 'PUT', url: '/foo', body: `{"foo":"bar"}` },
+        response: { data: { foo: 'bar' }}
+      }
+    });
+
+    expected = `
+Unable to create foo challenge for @alexkappa.
+
+\`\`\`
+foo:1
+bar:12
+\`\`\`
+
+<details>
+  <summary>Request</summary>
+
+\`\`\`
+PUT /foo
+
+{"foo":"bar"}
+\`\`\`
+</details>
+
+<details>
+  <summary>Response</summary>
+
+\`\`\`
+{"foo":"bar"}
+\`\`\`
+</details>`;
+
+    expect(message).toStrictEqual(expected)
+  })
 });
 
 // For more information about testing with Jest see:
