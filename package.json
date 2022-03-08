@@ -16,8 +16,8 @@
     "test": "jest"
   },
   "dependencies": {
+    "handlebars": "^4.7.7",
     "minimatch": "^3.0.4",
-    "mustache": "^4.2.0",
     "probot": "^11.0.1",
     "probot-commands": "^1.1.0",
     "probot-metadata": "^2.1.0"
