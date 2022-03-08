@@ -1,28 +1,27 @@
+{{#with error}}
 ```
-{{error.stack}}
+{{{stack}}}
 ```
 
-{{#error.request}}
+{{#with request}}
 <details>
   <summary>Request</summary>
 
 ```
-{{error.request.method}} {{error.request.url}}
+{{method}} {{{url}}}
 
-{{{error.request.body}}}
+{{{body}}}
 ```
 </details>
+{{/with}}
 
-{{/error.request}}
-
-{{#error.response}}
+{{#with response}}
 <details>
   <summary>Response</summary>
 
-
 ```
-{{{error.response.data}}}
+{{{json data}}}
 ```
-</details>   
-
-{{/error.response}}
+</details>
+{{/with}}
+{{/with}}
