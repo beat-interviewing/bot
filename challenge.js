@@ -1,6 +1,7 @@
 const commands = require('probot-commands');
 const metadata = require('probot-metadata');
 const minimatch = require("minimatch");
+const log = require('./log');
 
 class Challenge {
 
@@ -32,8 +33,11 @@ class Challenge {
     let [candidate, assignment] = command.arguments.split(' ');
 
     candidate = candidate.replace('@', '');
+    if (!assignment) {
+      assignment = context.issue().repo;
+    }
 
-    context.log.info({
+    log.info({
       event: context.name,
       command: command.name,
       issue: context.issue(),
@@ -69,7 +73,7 @@ class Challenge {
         }
       });
 
-      context.log.info({ config });
+      log.debug({ config: config.challenge });
 
       // Create a new repository using the assignment template. As of the time of
       // writing, GitHub apps are not able to access this API resource. Therefore 
@@ -80,10 +84,9 @@ class Challenge {
         owner: repoOwner,
         name: repo,
         private: true,
-        include_all_branches: config.challenge.clone.include_all_branches,
       });
 
-      context.log.info({ repository });
+      log.info(`Repository created as ${repository.full_name}`);
 
       await meta.set('challenge', {
         repoOwner,
@@ -96,12 +99,41 @@ class Challenge {
         config
       });
 
+      // If the challenge is configured as such, will create a pull request for
+      // the candidate to review. In such cases the objective is to assess the 
+      // candidates ability to give feedback or spot issues in a peer review.
       if (config.challenge.create_pull_request) {
+
+        // Create the branch which we'll copy files to
+        this._createBranch(
+          repoOwner,
+          repo,
+          config.challenge.create_pull_request.head,
+          config.challenge.create_pull_request.base);
+
+        // Grab files from ${challenge.repoOwner}/${challenge.assignment} and
+        // commit them to ${challenge.repoOwner}/${challenge.repo}.
+        //
+        // These files are meant to help reviewers grade the assignment by
+        // automating parts of the grading process.
+        const files = await this._copyFiles(
+          repoOwner,
+          assignment,
+          repo,
+          config.challenge.create_pull_request.head,
+          config.challenge.create_pull_request.head,
+          config.challenge.create_pull_request.paths
+        );
+
+        log.info({ msg: 'Copied files', files });
+
         await this.octokit.pulls.create({
           owner: repoOwner,
           repo: repo,
           head: config.challenge.create_pull_request.head,
           base: config.challenge.create_pull_request.base,
+          title: config.challenge.create_pull_request.title,
+          body: config.challenge.create_pull_request.body,
         });
       }
 
@@ -112,7 +144,7 @@ class Challenge {
         username: candidate,
       });
 
-      context.log.info({ collaborator });
+      log.info({ msg: 'Invited collaborator', invitee: collaborator.invitee.login });
 
       await context.octokit.issues.update(context.issue({
         title: `Challenge \`@${candidate}\` to complete \`${assignment}\``,
@@ -153,7 +185,7 @@ class Challenge {
       return await this.reply(context, 'challenge-unknown');
     }
 
-    context.log.info({
+    log.info({
       event: context.name,
       command: command.name,
       issue: context.issue(),
@@ -197,7 +229,7 @@ class Challenge {
 
     const meta = metadata(context);
 
-    context.log.info({
+    log.info({
       event: context.name,
       command: command.name,
       issue: context.issue(),
@@ -247,7 +279,7 @@ class Challenge {
     // issue metadata.
     let challenge = await meta.get('challenge');
 
-    context.log.info({
+    log.info({
       event: context.name,
       command: command.name,
       issue: context.issue(),
@@ -285,33 +317,14 @@ class Challenge {
       //
       // These files are meant to help reviewers grade the assignment by
       // automating parts of the grading process.
-      let copyFiles = async (paths) => {
-
-        let files = (await this._getFiles(
-          challenge.repoOwner,
-          challenge.assignment,
-          challenge.config.review.copy.head
-        )).filter(file => {
-          for (const path of paths) {
-            if (minimatch(file.path, path)) {
-              return true;
-            }
-          }
-          return false;
-        });
-
-        context.log.info({ files: files.map(file => file.path) });
-
-        await this._uploadFiles(
-          challenge.repoOwner,
-          challenge.repo,
-          challenge.config.review.copy.base,
-          files);
-
-        return files.map(file => file.path);
-      };
-
-      const files = await copyFiles(challenge.config.review.copy.paths);
+      const files = await this._copyFiles(
+        challenge.repoOwner,
+        challenge.assignment,
+        challenge.repo,
+        challenge.config.review.copy.head,
+        challenge.config.review.copy.base,
+        challenge.config.review.copy.paths
+      );
 
       return await this.reply(context, 'challenge-reviewed-uploaded', {
         repoOwner: challenge.repoOwner,
@@ -339,7 +352,7 @@ class Challenge {
 
     const meta = metadata(context);
 
-    context.log.info({
+    log.info({
       event: context.name,
       command: command.name,
       issue: context.issue(),
@@ -451,7 +464,7 @@ class Challenge {
     const { data: newCommit } = await this.octokit.git.createCommit({
       owner,
       repo,
-      message: "Copying review files 🤖",
+      message: "Copy files 🤖",
       tree: newTree.sha,
       parents: [commit.sha]
     });
@@ -462,6 +475,48 @@ class Challenge {
       ref: `heads/${ref}`,
       sha: newCommit.sha,
       // force: true
+    });
+  }
+
+  async _copyFiles(owner, assignment, repo, head, base, paths) {
+
+    let files = (await this._getFiles(
+      owner,
+      assignment,
+      head
+    )).filter(file => {
+      for (const path of paths) {
+        if (minimatch(file.path, path)) {
+          return true;
+        }
+      }
+      return false;
+    });
+
+    // log.info({ files: files.map(file => file.path) });
+
+    await this._uploadFiles(
+      owner,
+      repo,
+      base,
+      files);
+
+    return files.map(file => file.path);
+  };
+
+  async _createBranch(owner, repo, head, base) {
+
+    const { data: ref } = await this.octokit.git.getRef({
+      owner,
+      repo,
+      ref: `heads/${base}`
+    });
+
+    await this.octokit.git.createRef({
+      owner,
+      repo,
+      ref: `refs/heads/${head}`,
+      sha: ref.object.sha,
     });
   }
 
