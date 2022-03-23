@@ -1,4 +1,4 @@
-# acme-interviewing[bot]
+# Bot
 
 This is a proof of concept exploring the automation of interviewing workflows.
 It is intended to improve the time taken by reviewers to grade take-home
@@ -21,7 +21,7 @@ docker run -e APP_ID=<app-id> -e PRIVATE_KEY=<pem-value> bot
 ## Usage
 
 The bot listens for slash commands posted on issues or pull requests in
-repositories of the [acme-interviewing](https://github.com/acme-interviewing)
+repositories of the [beat-interviewing](https://github.com/beat-interviewing)
 organization.
 
 As an example, lets prepare the coding challenge for
@@ -31,12 +31,12 @@ time to show us if he can handle our take-home assignment.
 ### Challenge a Candidate
 
 To kick off the process, [create an
-issue](https://github.com/acme-interviewing/interview/issues/new). The title
+issue](https://github.com/beat-interviewing/interview/issues/new). The title
 wont't matter for now, but in the body we'll use the `/challenge` slash command.
 
 Where `<candidate>` is the GitHub username of the candidate and `<assignment>`
 should match a repository under the
-[acme-interviewing](https://github.com/acme-interviewing) organization. This
+[beat-interviewing](https://github.com/beat-interviewing) organization. This
 repository **must** be a template repository.
 
 ![challenge](docs/img/challenge.png)
@@ -65,7 +65,7 @@ Actions, or verification scripts.
 
 In the example pictured above, several files were committed to the candidates
 assignment. For the
-[`go`](https://github.com/acme-interviewing/go-take-home/tree/review) challenge,
+[`go`](https://github.com/beat-interviewing/go-take-home-assignment/tree/review) challenge,
 this includes the expected output, some automation workflows and scripts that
 help verify the solutions correctness and timing.
 

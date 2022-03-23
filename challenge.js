@@ -75,9 +75,10 @@ class Challenge {
 
       log.debug({ config: config.challenge });
 
-      // Create a new repository using the assignment template. As of the time of
-      // writing, GitHub apps are not able to access this API resource. Therefore 
-      // we use an OAuth2 authenticated octokit client as a workaround.
+      // Create a new repository using the assignment template. As of the time
+      // of writing, GitHub apps are not able to access this API resource.
+      // Therefore we use an OAuth2 authenticated octokit client as a
+      // workaround.
       const { data: repository } = await this.octokit.repos.createUsingTemplate({
         template_owner: repoOwner,
         template_repo: assignment,
@@ -138,13 +139,13 @@ class Challenge {
       }
 
       // Add the candidate as a collaborator to the newly created repository.
-      const { data: collaborator } = await context.octokit.repos.addCollaborator({
+      await context.octokit.repos.addCollaborator({
         owner: repoOwner,
         repo: repo,
         username: candidate,
       });
 
-      log.info({ msg: 'Invited collaborator', invitee: collaborator.invitee.login });
+      log.info({ msg: 'Invited collaborator', invitee: candidate });
 
       await context.octokit.issues.update(context.issue({
         title: `Challenge \`@${candidate}\` to complete \`${assignment}\``,
@@ -233,16 +234,21 @@ class Challenge {
       event: context.name,
       command: command.name,
       issue: context.issue(),
+      payload: context.payload,
     });
 
-    // Input would be in the format `/join`. More information is retrieved from 
-    // issue metadata.
+    // Input would be in the format `/join [username]`. The `username` is
+    // optional and if omitted, will use the username of the person issuing the
+    // command.
     let challenge = await meta.get('challenge');
     if (!challenge) {
       return await this.reply(context, 'challenge-unknown');
     }
 
-    const reviewer = context.payload.issue.user.login;
+    let reviewer = command.arguments.replace('@', '').trim();
+    if (!reviewer) {
+      reviewer = context.payload.comment.user.login;
+    }
 
     try {
       // Add the reviewer as a collaborator to the candidates challenge.

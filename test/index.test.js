@@ -23,7 +23,7 @@ describe("Challenger", () => {
   test("creates a challenge when invoked", async () => {
     
     const mock = nock("https://api.github.com")
-      .post("/repos/acme-interviewing/interview/issues/41/comments", (body) => {
+      .post("/repos/beat-interviewing/interview/issues/41/comments", (body) => {
         expect(body).toMatchObject({
           body: "Created challenge"
         });
@@ -45,7 +45,7 @@ describe("Challenger", () => {
         repository: {
           name: "interview",
           owner: {
-            login: "acme-interviewing"
+            login: "beat-interviewing"
           }
         },
         installation: {

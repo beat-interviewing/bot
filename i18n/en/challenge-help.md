@@ -1,8 +1,8 @@
 Hey! I can help you facilitate coding challenge assignments with our candidates.
 
-To create a challenge for a candidate, use the `/challenge` command. It takes the arguments `candidate` and `assignment`. Like so:
+To create a challenge for a candidate, use the `/challenge` command. It takes the arguments `candidate` and optionally `assignment`. Like so:
 
-    /challenge @username go-take-home
+    /challenge @username [assignment]
 
 To end the challenge, use the `/end` command. This will revoke the candidates access to the challenge repository.
 
@@ -14,9 +14,9 @@ If configured, I may be able to help make reviewing easier for you. I can copy f
 
     /review
 
-To gain access to a challenge, you may request to join in on the fun!
+To gain access to a challenge, use the `/join` command to join in on the fun! It takes an optional `@username` argument if you are inviting someone else.
 
-    /join
+    /join [@username]
 
 If for some reason you wish to delete a challenge, use the `/delete` command. It will delete the repository. **Warning!** this action will irreversibly delete the repository. Be careful when using this command.
 
