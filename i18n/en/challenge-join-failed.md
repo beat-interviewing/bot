@@ -1,3 +1,3 @@
-I am unable to add you as a collaborator @{{user}}
+I was unable to add @{{user}} as a collaborator.
 
 {{>error}}

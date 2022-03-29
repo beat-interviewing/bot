@@ -1,3 +1,3 @@
-I was unable to grant @{{reviewer}} access to [{{repoOwner}}/{{repo}}](/{{repoOwner}}/{{repo}})
+I was unable end the assignment.
 
 {{>error}}

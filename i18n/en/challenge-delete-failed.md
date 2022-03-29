@@ -1,3 +1,3 @@
-I was unable to delete challenge {{challenge}}
+I was unable to delete challenge.
 
 {{>error}}

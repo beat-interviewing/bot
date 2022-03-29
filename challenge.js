@@ -28,8 +28,9 @@ class Challenge {
 
     const meta = metadata(context);
 
-    // Input would be in the format `/challenge @username go-take-home`. We
-    // split the command to extract the username and assignment to use.
+    // Input would be in the format `/challenge @username [go-take-home]`. We
+    // split the command to extract the username and assignment to use. If an
+    // assignment argument was not present, use the current repo as fallback.
     let [candidate, assignment] = command.arguments.split(' ');
 
     candidate = candidate.replace('@', '');
@@ -96,6 +97,7 @@ class Challenge {
       await this.reply(context, 'challenge-created', challenge);
     } catch (error) {
       await this.reply(context, 'challenge-create-failed', { error });
+      return;
     }
 
     // If the challenge is configured as such, will create a pull request for
@@ -216,12 +218,7 @@ class Challenge {
 
       return await this.reply(context, 'challenge-ended', challenge);
     } catch (error) {
-      return await this.reply(context, 'challenge-end-failed', {
-        reviewer,
-        repoOwner: challenge.repoOwner,
-        repo: challenge.repo,
-        error
-      });
+      return await this.reply(context, 'challenge-end-failed', { error });
     }
   }
 
@@ -299,6 +296,10 @@ class Challenge {
       challenge: challenge
     });
 
+    if (challenge.status !== 'ended') {
+      return await this.reply(context, 'challenge-review-not-ended');
+    }
+
     const reviewer = context.payload.issue.user.login;
 
     try {
@@ -316,12 +317,7 @@ class Challenge {
         assignment: challenge.assignment
       });
     } catch (error) {
-      await this.reply(context, 'challenge-review-failed', {
-        repoOwner: challenge.repoOwner,
-        repo: challenge.repo,
-        reviewer: reviewer,
-        error: error
-      });
+      await this.reply(context, 'challenge-review-failed', { error });
     }
 
     if (challenge.config.review.copy) {
@@ -414,7 +410,7 @@ class Challenge {
 
       return await this.reply(context, 'challenge-deleted', challenge);
     } catch (error) {
-      return await this.reply(context, 'challenge-delete-failed', challenge);
+      return await this.reply(context, 'challenge-delete-failed', { error });
     }
   }
 

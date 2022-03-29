@@ -1,0 +1,1 @@
+Uh oh! It seems that the assignment is still accessible by the candidate. To proceed with reviewing, first use `/end` to revoke the candidate's access.
