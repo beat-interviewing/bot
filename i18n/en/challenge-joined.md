@@ -1,1 +1,1 @@
-Granted @{{reviewer}} access to [{{repoOwner}}/{{repo}}](/{{repoOwner}}/{{repo}})
+Granted @{{user}} access to [{{repoOwner}}/{{repo}}](/{{repoOwner}}/{{repo}})

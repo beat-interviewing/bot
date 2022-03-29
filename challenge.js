@@ -45,125 +45,132 @@ class Challenge {
       assignment
     });
 
-    try {
-      // Check whether a challenge has already been created in this issue. If so
-      // reject the request and instruct the caller to create a new issue.
-      const challenge = await meta.get('challenge');
-      if (challenge && challenge.repo !== '') {
-        return await this.reply(context, 'challenge-exists', {
-          repoOwner: challenge.repoOwner,
-          repo: challenge.repo,
-          createdBy: challenge.createdBy
-        });
-      }
-
-      // Create a random string for added entropy.
-      const rand = (Math.random() + 1).toString(36).substring(2, 5);
-      const repoOwner = context.payload.repository.owner.login;
-      const repo = `${assignment}-${candidate}-${rand}`;
-
-      // Read the assignment configuration. 
-      const { config } = await this.octokit.config.get({
-        owner: repoOwner,
-        repo: assignment,
-        path: ".github/assignment.yml",
-        defaults: {
-          challenge: {},
-          review: {}
-        }
-      });
-
-      log.debug({ config: config.challenge });
-
-      // Create a new repository using the assignment template. As of the time
-      // of writing, GitHub apps are not able to access this API resource.
-      // Therefore we use an OAuth2 authenticated octokit client as a
-      // workaround.
-      const { data: repository } = await this.octokit.repos.createUsingTemplate({
-        template_owner: repoOwner,
-        template_repo: assignment,
-        owner: repoOwner,
-        name: repo,
-        private: true,
-      });
-
-      log.info(`Repository created as ${repository.full_name}`);
-
-      await meta.set('challenge', {
-        repoOwner,
-        repo,
-        candidate,
-        assignment,
-        status: 'created',
-        createdAt: new Date().toISOString(),
-        createdBy: context.payload.issue.user.login,
-        config
-      });
-
-      // If the challenge is configured as such, will create a pull request for
-      // the candidate to review. In such cases the objective is to assess the 
-      // candidates ability to give feedback or spot issues in a peer review.
-      if (config.challenge.create_pull_request) {
-
-        // Create the branch which we'll copy files to
-        this._createBranch(
-          repoOwner,
-          repo,
-          config.challenge.create_pull_request.head,
-          config.challenge.create_pull_request.base);
-
-        // Grab files from ${challenge.repoOwner}/${challenge.assignment} and
-        // commit them to ${challenge.repoOwner}/${challenge.repo}.
-        //
-        // These files are meant to help reviewers grade the assignment by
-        // automating parts of the grading process.
-        const files = await this._copyFiles(
-          repoOwner,
-          assignment,
-          repo,
-          config.challenge.create_pull_request.head,
-          config.challenge.create_pull_request.head,
-          config.challenge.create_pull_request.paths
-        );
-
-        log.info({ msg: 'Copied files', files });
-
-        await this.octokit.pulls.create({
-          owner: repoOwner,
-          repo: repo,
-          head: config.challenge.create_pull_request.head,
-          base: config.challenge.create_pull_request.base,
-          title: config.challenge.create_pull_request.title,
-          body: config.challenge.create_pull_request.body,
-        });
-      }
-
-      // Add the candidate as a collaborator to the newly created repository.
-      await context.octokit.repos.addCollaborator({
-        owner: repoOwner,
-        repo: repo,
-        username: candidate,
-      });
-
-      log.info({ msg: 'Invited collaborator', invitee: candidate });
-
-      await context.octokit.issues.update(context.issue({
-        title: `Challenge \`@${candidate}\` to complete \`${assignment}\``,
-        labels: [`assignment/${assignment}`]
-      }));
-
-      return await this.reply(context, 'challenge-created', {
-        repoOwner,
-        repo,
-        candidate
-      });
-    } catch (error) {
-      return await this.reply(context, 'challenge-create-failed', {
-        assignment,
-        candidate,
-        error
+    // Check whether a challenge has already been created in this issue. If so
+    // reject the request and instruct the caller to create a new issue.
+    let challenge = await meta.get('challenge');
+    if (challenge && challenge.repo !== '') {
+      return await this.reply(context, 'challenge-exists', {
+        repoOwner: challenge.repoOwner,
+        repo: challenge.repo,
+        createdBy: challenge.createdBy
       });
     }
+
+    // Create a random string for added entropy.
+    const rand = (Math.random() + 1).toString(36).substring(2, 5);
+    const repoOwner = context.payload.repository.owner.login;
+    const repo = `${assignment}-${candidate}-${rand}`;
+
+    // Read the assignment configuration. 
+    const { config } = await this.octokit.config.get({
+      owner: repoOwner,
+      repo: assignment,
+      path: ".github/assignment.yml",
+      defaults: {
+        challenge: {},
+        review: {}
+      }
+    });
+
+    log.debug({ config: config.challenge });
+
+    challenge = {
+      repoOwner,
+      repo,
+      candidate,
+      assignment,
+      status: 'created',
+      createdAt: new Date().toISOString(),
+      createdBy: context.payload.issue.user.login,
+      config
+    };
+
+    try {
+      await this.cloneRepo(challenge);
+
+      await this.octokit.issues.update(context.issue({
+        title: `Challenge \`@${challenge.candidate}\` to complete \`${challenge.assignment}\``,
+        labels: [`assignment/${challenge.assignment}`]
+      }));
+
+      await this.reply(context, 'challenge-created', challenge);
+    } catch (error) {
+      await this.reply(context, 'challenge-create-failed', { error });
+    }
+
+    // If the challenge is configured as such, will create a pull request for
+    // the candidate to review. In such cases the objective is to assess the 
+    // candidates ability to give feedback or spot issues in a peer review.
+    if (config.challenge.create_pull_request) {
+      try {
+        const pull = await this.createPull(challenge);
+
+        challenge.pull = pull.number;
+        challenge.pull_commit_sha = pull.head.sha;
+
+        await this.reply(context, 'challenge-created-pr', challenge);
+      } catch (error) {
+        await this.reply(context, 'challenge-create-failed', { error });
+      }
+    }
+
+    await meta.set('challenge', challenge);
+  }
+
+  async cloneRepo(challenge) {
+
+    // Create a new repository using the assignment template. As of the time
+    // of writing, GitHub apps are not able to access this API resource.
+    // Therefore we use an OAuth2 authenticated octokit client as a
+    // workaround.
+    const { data: repository } = await this.octokit.repos.createUsingTemplate({
+      template_owner: challenge.repoOwner,
+      template_repo: challenge.assignment,
+      owner: challenge.repoOwner,
+      name: challenge.repo,
+      private: true,
+    });
+
+    log.info(`Repository created as ${repository.full_name}`);
+
+    return repository;
+  }
+
+  async createPull(challenge) {
+
+    // Create the branch which we'll copy files to
+    this.createBranch(
+      challenge.repoOwner,
+      challenge.repo,
+      challenge.config.challenge.create_pull_request.head,
+      challenge.config.challenge.create_pull_request.base);
+
+    // Grab files from ${challenge.repoOwner}/${challenge.assignment} and
+    // commit them to ${challenge.repoOwner}/${challenge.repo}.
+    //
+    // These files are meant to help reviewers grade the assignment by
+    // automating parts of the grading process.
+    const files = await this.copyFiles(
+      challenge.repoOwner,
+      challenge.assignment,
+      challenge.repo,
+      challenge.config.challenge.create_pull_request.head,
+      challenge.config.challenge.create_pull_request.head,
+      challenge.config.challenge.create_pull_request.paths
+    );
+
+    log.info({ msg: 'Copied files', files });
+
+    const { data: pull } = await this.octokit.pulls.create({
+      owner: challenge.repoOwner,
+      repo: challenge.repo,
+      head: challenge.config.challenge.create_pull_request.head,
+      base: challenge.config.challenge.create_pull_request.base,
+      title: challenge.config.challenge.create_pull_request.title,
+      body: challenge.config.challenge.create_pull_request.body,
+    });
+
+    return pull;
   }
 
   /**
@@ -219,9 +226,9 @@ class Challenge {
   }
 
   /**
-   * Join the challenge as a reviewer.
+   * Join the challenge as a collaborator.
    * 
-   * This command grants the reviewer access to the candidates challenge. 
+   * This command grants a user access to a candidates challenge. 
    * 
    * @param {Context} context 
    * @param {Command} command 
@@ -229,13 +236,6 @@ class Challenge {
   async join(context, command) {
 
     const meta = metadata(context);
-
-    log.info({
-      event: context.name,
-      command: command.name,
-      issue: context.issue(),
-      payload: context.payload,
-    });
 
     // Input would be in the format `/join [username]`. The `username` is
     // optional and if omitted, will use the username of the person issuing the
@@ -245,29 +245,36 @@ class Challenge {
       return await this.reply(context, 'challenge-unknown');
     }
 
-    let reviewer = command.arguments.replace('@', '').trim();
-    if (!reviewer) {
-      reviewer = context.payload.comment.user.login;
+    let user = context.payload.comment.user.login;
+    if (command.arguments) {
+      user = command.arguments.trim().replace('@', '');
     }
+
+    log.info({
+      event: context.name,
+      command: command.name,
+      issue: context.issue(),
+      user: user,
+    });
 
     try {
       // Add the reviewer as a collaborator to the candidates challenge.
       await context.octokit.repos.addCollaborator({
         owner: challenge.repoOwner,
         repo: challenge.repo,
-        username: reviewer
+        username: user
       });
 
       return await this.reply(context, 'challenge-joined', {
         repoOwner: challenge.repoOwner,
         repo: challenge.repo,
-        reviewer: reviewer
+        user
       });
     } catch (error) {
       return await this.reply(context, 'challenge-join-failed', {
         repoOwner: challenge.repoOwner,
         repo: challenge.repo,
-        reviewer: reviewer
+        user
       });
     }
   }
@@ -309,7 +316,7 @@ class Challenge {
         assignment: challenge.assignment
       });
     } catch (error) {
-      return await this.reply(context, 'challenge-review-failed', {
+      await this.reply(context, 'challenge-review-failed', {
         repoOwner: challenge.repoOwner,
         repo: challenge.repo,
         reviewer: reviewer,
@@ -317,35 +324,61 @@ class Challenge {
       });
     }
 
-    try {
-      // Grab files from ${challenge.repoOwner}/${challenge.assignment} and
-      // commit them to ${challenge.repoOwner}/${challenge.repo}.
-      //
-      // These files are meant to help reviewers grade the assignment by
-      // automating parts of the grading process.
-      const files = await this._copyFiles(
-        challenge.repoOwner,
-        challenge.assignment,
-        challenge.repo,
-        challenge.config.review.copy.head,
-        challenge.config.review.copy.base,
-        challenge.config.review.copy.paths
-      );
+    if (challenge.config.review.copy) {
 
-      return await this.reply(context, 'challenge-reviewed-uploaded', {
-        repoOwner: challenge.repoOwner,
-        repo: challenge.repo,
-        reviewer: reviewer,
-        assignment: challenge.assignment,
-        files: files.join('\n')
-      });
-    } catch (error) {
-      return await this.reply(context, 'challenge-review-failed', {
-        repoOwner: challenge.repoOwner,
-        repo: challenge.repo,
-        reviewer: reviewer,
-        error: error
-      });
+      try {
+        // Grab files from ${challenge.repoOwner}/${challenge.assignment} and
+        // commit them to ${challenge.repoOwner}/${challenge.repo}.
+        //
+        // These files are meant to help reviewers grade the assignment by
+        // automating parts of the grading process.
+        const files = await this.copyFiles(
+          challenge.repoOwner,
+          challenge.assignment,
+          challenge.repo,
+          challenge.config.review.copy.head,
+          challenge.config.review.copy.base,
+          challenge.config.review.copy.paths
+        );
+
+        await this.reply(context, 'challenge-reviewed-uploaded', {
+          repoOwner: challenge.repoOwner,
+          repo: challenge.repo,
+          reviewer: reviewer,
+          assignment: challenge.assignment,
+          files: files.join('\n')
+        });
+      } catch (error) {
+        await this.reply(context, 'challenge-review-failed', {
+          repoOwner: challenge.repoOwner,
+          repo: challenge.repo,
+          error: error
+        });
+      }
+    }
+
+    if (challenge.config.review.comments) {
+      try {
+        // If configured as such, create review comments on the specified pull 
+        // request.
+        await context.octokit.pulls.createReview({
+          owner: challenge.repoOwner,
+          repo: challenge.repo,
+          pull_number: challenge.pull,
+          commit_id: challenge.pull_commit_sha,
+          event: 'COMMENT',
+          comments: challenge.config.review.comments
+        });
+
+        await this.reply(context, 'challenge-reviewed-commented', challenge);
+
+      } catch (error) {
+        return await this.reply(context, 'challenge-review-failed', {
+          repoOwner: challenge.repoOwner,
+          repo: challenge.repo,
+          error: error
+        });
+      }
     }
   }
 
@@ -385,7 +418,7 @@ class Challenge {
     }
   }
 
-  async _getFiles(owner, repo, ref) {
+  async getFiles(owner, repo, ref) {
 
     const { data: reference } = await this.octokit.git.getRef({
       owner,
@@ -431,7 +464,7 @@ class Challenge {
     return files;
   }
 
-  async _uploadFiles(owner, repo, ref, files) {
+  async putFiles(owner, repo, ref, files) {
 
     let tree = [];
 
@@ -484,9 +517,9 @@ class Challenge {
     });
   }
 
-  async _copyFiles(owner, assignment, repo, head, base, paths) {
+  async copyFiles(owner, assignment, repo, head, base, paths) {
 
-    let files = (await this._getFiles(
+    let files = (await this.getFiles(
       owner,
       assignment,
       head
@@ -501,7 +534,7 @@ class Challenge {
 
     // log.info({ files: files.map(file => file.path) });
 
-    await this._uploadFiles(
+    await this.putFiles(
       owner,
       repo,
       base,
@@ -510,7 +543,7 @@ class Challenge {
     return files.map(file => file.path);
   };
 
-  async _createBranch(owner, repo, head, base) {
+  async createBranch(owner, repo, head, base) {
 
     const { data: ref } = await this.octokit.git.getRef({
       owner,

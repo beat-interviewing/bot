@@ -1,3 +1,3 @@
-Unable to create {{assignment}} challenge for @{{candidate}}. 
+Unable to create assignment. 
 
 {{>error}}

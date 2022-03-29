@@ -1,3 +1,3 @@
-I was unable to make @{{reviewer}} a collaborator on [{{repoOwner}}/{{repo}}](/{{repoOwner}}/{{repo}}).
+I was unable to prepare [{{repoOwner}}/{{repo}}](/{{repoOwner}}/{{repo}}) for review.
 
 {{>error}}
