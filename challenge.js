@@ -28,12 +28,15 @@ class Challenge {
 
     const meta = metadata(context);
 
-    // Input would be in the format `/challenge @username [go-take-home]`. We
-    // split the command to extract the username and assignment to use. If an
-    // assignment argument was not present, use the current repo as fallback.
+    // Input would be in the format `/challenge @username [assignment]`. We
+    // split the command to extract the username and assignment to use. 
     let [candidate, assignment] = command.arguments.split(' ');
 
-    candidate = candidate.replace('@', '');
+    // Normalize username by removing any leading @ symbol that may be present.
+    candidate = candidate.replace(/^@/, '');
+    
+    // If an assignment argument was not present, use the current repo as
+    // fallback.
     if (!assignment) {
       assignment = context.issue().repo;
     }
@@ -171,6 +174,13 @@ class Challenge {
       title: challenge.config.challenge.create_pull_request.title,
       body: challenge.config.challenge.create_pull_request.body,
     });
+
+    // await this.octokit.pulls.requestReviewers({
+    //   owner: challenge.repoOwner,
+    //   repo: challenge.repo,
+    //   pull_number: pull.number,
+    //   reviewers: [ challenge.candidate ]
+    // });
 
     return pull;
   }
