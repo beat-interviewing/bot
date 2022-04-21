@@ -7,7 +7,8 @@ class Challenge {
 
   /**
    * 
-   * @param {ProbotOctokit} octokit 
+   * @param {ProbotOctokit} octokit
+   * @param {I18n} i18n
    */
   constructor(octokit, i18n) {
     this.octokit = octokit;
@@ -574,6 +575,11 @@ class Challenge {
     return await this.reply(context, 'challenge-help');
   }
 
+  /**
+   * Registers the commands the bit listens for
+   * 
+   * @param {Probot} robot 
+   */
   register(robot) {
     commands(robot, 'challenge', this.create.bind(this));
     commands(robot, 'end', this.end.bind(this));
