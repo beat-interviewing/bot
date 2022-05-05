@@ -1,0 +1,492 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "The AWS CloudFormation template for this Serverless application",
+  "Resources": {
+    "ServerlessDeploymentBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "ServerlessDeploymentBucketPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Ref": "ServerlessDeploymentBucket"
+        },
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "s3:*",
+              "Effect": "Deny",
+              "Principal": "*",
+              "Resource": [
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":s3:::",
+                      {
+                        "Ref": "ServerlessDeploymentBucket"
+                      },
+                      "/*"
+                    ]
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":s3:::",
+                      {
+                        "Ref": "ServerlessDeploymentBucket"
+                      }
+                    ]
+                  ]
+                }
+              ],
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": false
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "GithubLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/feel-the-bot-dev-github"
+      }
+    },
+    "GreenhouseLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/feel-the-bot-dev-greenhouse"
+      }
+    },
+    "IamRoleLambdaExecution": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "lambda.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": {
+              "Fn::Join": [
+                "-",
+                [
+                  "feel-the-bot",
+                  "dev",
+                  "lambda"
+                ]
+              ]
+            },
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:CreateLogGroup"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/feel-the-bot-dev*:*"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/feel-the-bot-dev*:*:*"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "Path": "/",
+        "RoleName": {
+          "Fn::Join": [
+            "-",
+            [
+              "feel-the-bot",
+              "dev",
+              {
+                "Ref": "AWS::Region"
+              },
+              "lambdaRole"
+            ]
+          ]
+        }
+      }
+    },
+    "GithubLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/feel-the-bot/dev/1651745205150-2022-05-05T10:06:45.150Z/feel-the-bot.zip"
+        },
+        "Handler": "handler.github",
+        "Runtime": "nodejs14.x",
+        "FunctionName": "feel-the-bot-dev-github",
+        "MemorySize": 1024,
+        "Timeout": 6,
+        "Environment": {
+          "Variables": {
+            "APP_ID": "171773",
+            "PRIVATE_KEY": "-----BEGIN RSA PRIVATE KEY-----\nMIIEpQIBAAKCAQEA7v/2bW6ckTCMkxEWOIYx3hHsLxO7/yaEAdPoeEu9n5NxXMUW\nktOvZTTUOkz+WY/KlRnF2RK/8l4UREL2ogahGnkjPzfLjK2tRtybQJn6cKyQYZrC\nJ70hxgeqPGtVPqQcL0TXHs/lbl6YVLiTXoju74zK7qY4ESW6t7q3+zJTdICwbcyR\nLQYyAcTl8vgqLQQMtxZpP++yxzDkLn2lDoo1USTBcS3lxSlEXuJwMaBeA6J3o08c\nlBXCd875GBLh36Ing9sD9CaWCcFmrMHRXcOIz764UAZjRJY+Qdlc02RTeiq0f3EJ\n9YEF1Im8we/OHQMqNp9G2C7AQw7lSDggn5WqKwIDAQABAoIBAQCkr3235FtAdIq5\nIDIGmvmrwv/TZK7LX1fhBosOsWollmyr9ybZ38HhZCjFT56ISlvWp967+H6JXKhs\nbRQTi6vhWQ2flyvMcTSQOp1EQ5XdpBsNFp2o0lt+YHO+lFs2AdFmBPKSycCXb9lZ\nr6Hkp0i1inefQKwrrKrfxWrXTdNR17I742WHOcz7ibLkoIYpiB/FuPir5uorbzH6\nLKNQBa8ArufR2VHRs1JTyhNkmC7q6+xzJRZGpl9sPnFtLPwurskEf7qzzKg8bpfF\n76hkWBNrZDrvzoxO8XWs8Q/AxKHz3zZXNNMQsF9+v74dPX9DbuDTaGWA+XqAYhP/\nZFtdZXo5AoGBAP2dYU+EVH21ZGv4BacSvxUpbPbyyEcmhckMUqkmpGR54oHM7QH3\nfcG2J8d+LMAAgOw1lkXwbyhN3q1mjEe5w4XxiTkmJd3PE0loIuEat4JMdwjgXSf7\nmPDnj3R/l9YLDAfq+/S9ttutiEAj1iQU96DzWtamwua0H9biIgHQwH8XAoGBAPE/\nZQebN6iCyF91oWFvWJRcTIanPu83g8Act3YTzZTOOR/i1MrSFFyHnAAyLm574mFO\n/9sC7eYmwOZ0maioCzldb6eUwbLgl3L2EKX3QG4Bq1G9tnwWtrLc2BE2TTEQ5ZOB\nEaTV5y1FAQorSQ8EUd+4+tzVqk0LjI7DAiIhnDoNAoGBAJwnauMq91rvdQWFkPVt\n9XlyKEVk9yvX7Ef97md4A4BaC70gEE5FtIixP4z1g1g09yx5Ui19/PMz/weFPJpt\nJpYyQeuOMYKBHb70/4TajmML8b7lZnZX07OA4DM63KJN6vp1FO18YjqgfmP/rLpK\nrq3LKQNBan/iKDiGw6mafuvBAoGAAcJynDGXoFUD3R5ghPNo8/wQWtMRdHE1Nst+\n0w+l6jXu2LqwzqHloB8lFiNHj2q75fXLi+9jiNAzi/rBvCctncd+rvw4xXM5546/\n5FX/VE4Sz8/QautHfdp6gPWibn8vDXpdhJRC0WO1dDuIluFzL2yL99xfF5zD866c\nb19LYmkCgYEA5jorr/8BZfqCo3FM/10GtX0cd3dfVUPt2LT5qLhTX2jlrr2Ukv2n\nY8A3UEnYEBw4ja62yTcEuGGH7OA4c3yDPZ+O9+NP4neaUhCz83mOfVlMWPOwSKig\nQNHE/hbRwv71CEpKsUuZcwe2+yl83FSQoJiHjt+uFvpjVhSTcWbw1LM=\n-----END RSA PRIVATE KEY-----\n",
+            "WEBHOOK_SECRET": "e871f75323907c6bc7c9ca12051e401573198b54",
+            "GITHUB_CLIENT_ID": "Iv1.f74aef20577b3206",
+            "GITHUB_CLIENT_SECRET": "d1635fc1303f70ee63f9c3449096962b32cd84b0",
+            "GITHUB_TOKEN": "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",
+            "GREENHOUSE_API_KEY": "b2d6dd73416c64bc6e8971b23b7ced8979722c5e5929e92ae9a4c5b9ca85ab72",
+            "NODE_ENV": "production",
+            "LOG_LEVEL": "debug"
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "GithubLogGroup"
+      ]
+    },
+    "GreenhouseLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/feel-the-bot/dev/1651745205150-2022-05-05T10:06:45.150Z/feel-the-bot.zip"
+        },
+        "Handler": "handler.github",
+        "Runtime": "nodejs14.x",
+        "FunctionName": "feel-the-bot-dev-greenhouse",
+        "MemorySize": 1024,
+        "Timeout": 6,
+        "Environment": {
+          "Variables": {
+            "APP_ID": "171773",
+            "PRIVATE_KEY": "-----BEGIN RSA PRIVATE KEY-----\nMIIEpQIBAAKCAQEA7v/2bW6ckTCMkxEWOIYx3hHsLxO7/yaEAdPoeEu9n5NxXMUW\nktOvZTTUOkz+WY/KlRnF2RK/8l4UREL2ogahGnkjPzfLjK2tRtybQJn6cKyQYZrC\nJ70hxgeqPGtVPqQcL0TXHs/lbl6YVLiTXoju74zK7qY4ESW6t7q3+zJTdICwbcyR\nLQYyAcTl8vgqLQQMtxZpP++yxzDkLn2lDoo1USTBcS3lxSlEXuJwMaBeA6J3o08c\nlBXCd875GBLh36Ing9sD9CaWCcFmrMHRXcOIz764UAZjRJY+Qdlc02RTeiq0f3EJ\n9YEF1Im8we/OHQMqNp9G2C7AQw7lSDggn5WqKwIDAQABAoIBAQCkr3235FtAdIq5\nIDIGmvmrwv/TZK7LX1fhBosOsWollmyr9ybZ38HhZCjFT56ISlvWp967+H6JXKhs\nbRQTi6vhWQ2flyvMcTSQOp1EQ5XdpBsNFp2o0lt+YHO+lFs2AdFmBPKSycCXb9lZ\nr6Hkp0i1inefQKwrrKrfxWrXTdNR17I742WHOcz7ibLkoIYpiB/FuPir5uorbzH6\nLKNQBa8ArufR2VHRs1JTyhNkmC7q6+xzJRZGpl9sPnFtLPwurskEf7qzzKg8bpfF\n76hkWBNrZDrvzoxO8XWs8Q/AxKHz3zZXNNMQsF9+v74dPX9DbuDTaGWA+XqAYhP/\nZFtdZXo5AoGBAP2dYU+EVH21ZGv4BacSvxUpbPbyyEcmhckMUqkmpGR54oHM7QH3\nfcG2J8d+LMAAgOw1lkXwbyhN3q1mjEe5w4XxiTkmJd3PE0loIuEat4JMdwjgXSf7\nmPDnj3R/l9YLDAfq+/S9ttutiEAj1iQU96DzWtamwua0H9biIgHQwH8XAoGBAPE/\nZQebN6iCyF91oWFvWJRcTIanPu83g8Act3YTzZTOOR/i1MrSFFyHnAAyLm574mFO\n/9sC7eYmwOZ0maioCzldb6eUwbLgl3L2EKX3QG4Bq1G9tnwWtrLc2BE2TTEQ5ZOB\nEaTV5y1FAQorSQ8EUd+4+tzVqk0LjI7DAiIhnDoNAoGBAJwnauMq91rvdQWFkPVt\n9XlyKEVk9yvX7Ef97md4A4BaC70gEE5FtIixP4z1g1g09yx5Ui19/PMz/weFPJpt\nJpYyQeuOMYKBHb70/4TajmML8b7lZnZX07OA4DM63KJN6vp1FO18YjqgfmP/rLpK\nrq3LKQNBan/iKDiGw6mafuvBAoGAAcJynDGXoFUD3R5ghPNo8/wQWtMRdHE1Nst+\n0w+l6jXu2LqwzqHloB8lFiNHj2q75fXLi+9jiNAzi/rBvCctncd+rvw4xXM5546/\n5FX/VE4Sz8/QautHfdp6gPWibn8vDXpdhJRC0WO1dDuIluFzL2yL99xfF5zD866c\nb19LYmkCgYEA5jorr/8BZfqCo3FM/10GtX0cd3dfVUPt2LT5qLhTX2jlrr2Ukv2n\nY8A3UEnYEBw4ja62yTcEuGGH7OA4c3yDPZ+O9+NP4neaUhCz83mOfVlMWPOwSKig\nQNHE/hbRwv71CEpKsUuZcwe2+yl83FSQoJiHjt+uFvpjVhSTcWbw1LM=\n-----END RSA PRIVATE KEY-----\n",
+            "WEBHOOK_SECRET": "e871f75323907c6bc7c9ca12051e401573198b54",
+            "GITHUB_CLIENT_ID": "Iv1.f74aef20577b3206",
+            "GITHUB_CLIENT_SECRET": "d1635fc1303f70ee63f9c3449096962b32cd84b0",
+            "GITHUB_TOKEN": "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",
+            "GREENHOUSE_API_KEY": "b2d6dd73416c64bc6e8971b23b7ced8979722c5e5929e92ae9a4c5b9ca85ab72",
+            "NODE_ENV": "production",
+            "LOG_LEVEL": "debug"
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "GreenhouseLogGroup"
+      ]
+    },
+    "GithubLambdaVersionNYswrTZ1lYDzdfVQsjpWspJVWSYtxZTAvNUFfmxCRk": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "GithubLambdaFunction"
+        },
+        "CodeSha256": "FF+j6waFYnqNy4tDxaU8aC4z3GEIEyQTcJRuWnIXGb0="
+      }
+    },
+    "GreenhouseLambdaVersionXi5dlX7kS6p5ElpdyR0UWLUtKhxFILuHxbPOPHyZI": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "GreenhouseLambdaFunction"
+        },
+        "CodeSha256": "FF+j6waFYnqNy4tDxaU8aC4z3GEIEyQTcJRuWnIXGb0="
+      }
+    },
+    "HttpApi": {
+      "Type": "AWS::ApiGatewayV2::Api",
+      "Properties": {
+        "Name": "dev-feel-the-bot",
+        "ProtocolType": "HTTP"
+      }
+    },
+    "HttpApiStage": {
+      "Type": "AWS::ApiGatewayV2::Stage",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "StageName": "$default",
+        "AutoDeploy": true,
+        "DefaultRouteSettings": {
+          "DetailedMetricsEnabled": false
+        }
+      }
+    },
+    "GithubLambdaPermissionHttpApi": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "GithubLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "HttpApi"
+              },
+              "/*"
+            ]
+          ]
+        }
+      }
+    },
+    "HttpApiIntegrationGithub": {
+      "Type": "AWS::ApiGatewayV2::Integration",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "IntegrationType": "AWS_PROXY",
+        "IntegrationUri": {
+          "Fn::GetAtt": [
+            "GithubLambdaFunction",
+            "Arn"
+          ]
+        },
+        "PayloadFormatVersion": "2.0",
+        "TimeoutInMillis": 6500
+      }
+    },
+    "HttpApiRouteDefault": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "RouteKey": "$default",
+        "Target": {
+          "Fn::Join": [
+            "/",
+            [
+              "integrations",
+              {
+                "Ref": "HttpApiIntegrationGithub"
+              }
+            ]
+          ]
+        }
+      },
+      "DependsOn": "HttpApiIntegrationGithub"
+    },
+    "GreenhouseLambdaPermissionHttpApi": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "GreenhouseLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "HttpApi"
+              },
+              "/*"
+            ]
+          ]
+        }
+      }
+    },
+    "HttpApiIntegrationGreenhouse": {
+      "Type": "AWS::ApiGatewayV2::Integration",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "IntegrationType": "AWS_PROXY",
+        "IntegrationUri": {
+          "Fn::GetAtt": [
+            "GreenhouseLambdaFunction",
+            "Arn"
+          ]
+        },
+        "PayloadFormatVersion": "2.0",
+        "TimeoutInMillis": 6500
+      }
+    },
+    "HttpApiRouteAnyApiGreenhouseParamVar": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "RouteKey": "ANY /api/greenhouse/{param+}",
+        "Target": {
+          "Fn::Join": [
+            "/",
+            [
+              "integrations",
+              {
+                "Ref": "HttpApiIntegrationGreenhouse"
+              }
+            ]
+          ]
+        }
+      },
+      "DependsOn": "HttpApiIntegrationGreenhouse"
+    }
+  },
+  "Outputs": {
+    "ServerlessDeploymentBucketName": {
+      "Value": {
+        "Ref": "ServerlessDeploymentBucket"
+      },
+      "Export": {
+        "Name": "sls-feel-the-bot-dev-ServerlessDeploymentBucketName"
+      }
+    },
+    "GithubLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "GithubLambdaVersionNYswrTZ1lYDzdfVQsjpWspJVWSYtxZTAvNUFfmxCRk"
+      },
+      "Export": {
+        "Name": "sls-feel-the-bot-dev-GithubLambdaFunctionQualifiedArn"
+      }
+    },
+    "GreenhouseLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "GreenhouseLambdaVersionXi5dlX7kS6p5ElpdyR0UWLUtKhxFILuHxbPOPHyZI"
+      },
+      "Export": {
+        "Name": "sls-feel-the-bot-dev-GreenhouseLambdaFunctionQualifiedArn"
+      }
+    },
+    "HttpApiId": {
+      "Description": "Id of the HTTP API",
+      "Value": {
+        "Ref": "HttpApi"
+      },
+      "Export": {
+        "Name": "sls-feel-the-bot-dev-HttpApiId"
+      }
+    },
+    "HttpApiUrl": {
+      "Description": "URL of the HTTP API",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Ref": "HttpApi"
+            },
+            ".execute-api.",
+            {
+              "Ref": "AWS::Region"
+            },
+            ".",
+            {
+              "Ref": "AWS::URLSuffix"
+            }
+          ]
+        ]
+      },
+      "Export": {
+        "Name": "sls-feel-the-bot-dev-HttpApiUrl"
+      }
+    }
+  }
+}
