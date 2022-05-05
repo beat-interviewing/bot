@@ -124,15 +124,15 @@ default_permissions:
   # https://developer.github.com/v3/apps/permissions/
   # organization_administration: read
 # The name of the GitHub App. Defaults to the name specified in package.json
-name: BEAT Bot
+name: BEAT Interviewing Bot (feel-the-bot)
 
 # The homepage of your GitHub App.
 # url: https://example.com/
 
 # A description of the GitHub App.
 description: |
-  Beat Bot manages the lifecycle of coding challenges sent to candidates
-  interviewing with BEAT.
+  Beat Interviewing Bot (feel-the-bot) manages the lifecycle of coding 
+  challenges sent to candidates interviewing with BEAT.
 
 # Set to true when your GitHub App is available to the public or false when it is only accessible to the owner of the app.
 # Default: true

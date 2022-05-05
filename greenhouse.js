@@ -1,5 +1,8 @@
 const log = require('./log');
+const crypto = require('crypto');
 const bodyParser = require('body-parser');
+const passport = require('passport');
+const BasicStrategy = require('passport-http').BasicStrategy;
 
 class Greenhouse {
 
@@ -12,44 +15,7 @@ class Greenhouse {
     this.i18n = i18n;
   }
 
-  /**
-   * @param {*} req 
-   * @param {*} res 
-   */
-  async onStateChange(req, res) {
-
-    log.info(req.body);
-
-    let payload = req.body.payload;
-
-    try {
-      if (payload.current_stage.name !== 'Exercise IX') {
-        res.status(201).end();
-      }
-
-      let username = payload.candidate.custom_fields.github_username.value;
-
-      await this.octokit.issues.create({
-        owner: 'beat-interviewing',
-        repo: 'go-code-review',
-        title: `Challenge @${username}`,
-        body: `/challenge @${username}`
-      });
-
-      res.send('OK');
-    } catch (err) {
-      log.error(err);
-      // res.status(500).json(err);
-    }
-  }
-
   async listChallenges(req, res) {
-
-    const topics = [
-      'take-home-assignment',
-      'code-review',
-      'live-coding',
-    ];
 
     const { data } = await this.octokit.search.repos({
       q: 'org:beat-interviewing+topic:greenhouse'
@@ -66,28 +32,30 @@ class Greenhouse {
   async createChallenge(req, res) {
 
     let {
-      partner_test_id: repository,
+      partner_test_id: repoFqn,
       candidate: {
         first_name: firstName,
         last_name: lastName,
         email: email,
-        greenhouse_profile_url: profileUrl
-      }
+        greenhouse_profile_url: profileUrl,
+      },
+      url
     } = req.body;
 
     try {
       let username = await this.lookupUsername(email);
-
-      let [repoOwner, repo] = repository.split('/');
+      let [owner, repo] = repoFqn.split('/');
 
       const { data: issue } = await this.octokit.issues.create({
-        owner: repoOwner,
+        owner: owner,
         repo: repo,
         title: `Challenge ${firstName} ${lastName} to complete \`${repo}\``,
-        body: `/challenge @${username}`
+        body: this.i18n.render('greenhouse-create-challenge', {
+          username, firstName, lastName, email, profileUrl, url,
+        }),
       });
 
-      return res.json(issue);
+      return res.json({ partner_interview_id: `${repoFqn}/${issue.number}` });
     } catch (err) {
       return res.json(err);
     }
@@ -115,16 +83,65 @@ class Greenhouse {
     return commits.items[0].author.login;
   }
 
+  async getChallengeStatus(req, res) {
+    let issueFqn = req.query.partner_interview_id;
+    let [owner, repo, issue] = issueFqn.split('/');
+
+    const challenge = await this.getIssueMetadata(owner, repo, issue, 'challenge');
+
+    return res.json({
+      partner_status: challenge.status === 'ended' ? 'complete' : challenge.status,
+      partner_profile_url: `https://github.com/${challenge.candidate}`,
+      partner_score: 80,
+      metadata: []
+    })
+  }
+
+  async getIssueMetadata (owner, repo, issue, key = null) {
+
+    const body = (await this.octokit.issues.get({
+      owner,
+      repo,
+      issue_number: issue
+    })).data.body || '';
+
+    const match = body.match(/\n\n<!-- probot = (.*) -->/)
+
+    if (match) {
+      let data = JSON.parse(match[1])
+      let prefix = Object.keys(data)[0];
+      data = data[prefix];
+
+      return key ? data && data[key] : data
+    }
+  }
+
   /**
    * Registers http endpoints for Greenhouse webhooks
    * 
    * @param {Router} router 
    */
   register(router) {
+
+    passport.use(new BasicStrategy(
+      function (apiKey, _, done) {
+        const hash = crypto.createHash('sha512');
+        if (crypto.timingSafeEqual(
+          hash.copy().update(apiKey).digest(),
+          hash.copy().update(process.env.GREENHOUSE_API_KEY).digest()
+        )) {
+          done(null, { apiKey });
+        } else {
+          done(null, false, { message: 'incorrect username or password' });
+        }
+      }
+    ));
+
     router.use(bodyParser.json());
-    router.get('/greenhouse/challenges', this.listChallenges.bind(this));
-    router.post('/greenhouse/challenges', this.createChallenge.bind(this));
-    router.post('/greenhouse/webhooks/candidate-state-change', this.onStateChange.bind(this));
+    router.use(passport.authenticate('basic', { session: false }));
+    router.get('challenges', this.listChallenges.bind(this));
+    router.post('challenges', this.createChallenge.bind(this));
+    router.get('challenges/status', this.getChallengeStatus.bind(this));
   }
 }
 
