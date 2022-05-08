@@ -26,7 +26,7 @@ module.exports = async (robot, { getRouter }) => {
   challenge.register(robot);
 
   const greenhouse = new Greenhouse(octokit, i18n);
-  greenhouse.register(getRouter('/api'));
+  greenhouse.register(getRouter('/api/greenhouse'));
 
   // For more information on building apps:
   // https://probot.github.io/docs/
