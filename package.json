@@ -1,11 +1,11 @@
 {
-  "name": "bot",
+  "name": "feel-the-bot",
   "version": "1.0.0",
   "private": true,
-  "description": "A Probot app",
+  "description": "BEAT Interviewing Bot (feel-the-bot)",
   "author": "Alex Kalyvitis <a.kalyvitis@thebeat.co>",
   "license": "UNLICENSED",
-  "homepage": "https://github.com/beat-interviewing/interview",
+  "homepage": "https://github.com/beat-interviewing/bot",
   "keywords": [
     "probot",
     "github",
@@ -16,11 +16,16 @@
     "test": "jest"
   },
   "dependencies": {
+    "@probot/adapter-aws-lambda-serverless": "^3.0.1",
     "handlebars": "^4.7.7",
     "minimatch": "^3.0.4",
+    "passport": "^0.5.2",
+    "passport-http": "^0.3.0",
     "probot": "^11.0.1",
     "probot-commands": "^1.1.0",
-    "probot-metadata": "^2.1.0"
+    "probot-metadata": "^2.1.0",
+    "serverless": "^3.16.0",
+    "serverless-http": "^3.0.1"
   },
   "devDependencies": {
     "jest": "^26.6.3",
