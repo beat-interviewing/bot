@@ -139,9 +139,9 @@ class Greenhouse {
 
     router.use(bodyParser.json());
     router.use(passport.authenticate('basic', { session: false }));
-    router.get('challenges', this.listChallenges.bind(this));
-    router.post('challenges', this.createChallenge.bind(this));
-    router.get('challenges/status', this.getChallengeStatus.bind(this));
+    router.get('/challenges', this.listChallenges.bind(this));
+    router.post('/challenges', this.createChallenge.bind(this));
+    router.get('/challenges/status', this.getChallengeStatus.bind(this));
   }
 }
 
