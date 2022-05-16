@@ -1,4 +1,5 @@
 const log = require('./log');
+const https = require('https');
 const crypto = require('crypto');
 const bodyParser = require('body-parser');
 const passport = require('passport');
@@ -10,9 +11,21 @@ class Greenhouse {
    * @param {ProbotOctokit} octokit
    * @param {I18n} i18n
    */
-  constructor(octokit, i18n) {
+  constructor(octokit, i18n, options) {
     this.octokit = octokit;
     this.i18n = i18n;
+
+    let defaultOptions = {
+      url: process.env.GREENHOUSE_URL,
+      username: process.env.GREENHOUSE_USERNAME,
+      password: process.env.GREENHOUSE_PASSWORD,
+      apiKey: process.env.GREENHOUSE_API_KEY,
+    };
+
+    this.options = {
+      ...defaultOptions,
+      ...options
+    };
   }
 
   async listChallenges(req, res) {
@@ -90,14 +103,32 @@ class Greenhouse {
     const challenge = await this.getIssueMetadata(owner, repo, issue, 'challenge');
 
     return res.json({
-      partner_status: challenge.status === 'ended' ? 'complete' : challenge.status,
+      partner_status: challenge.status === 'graded' ? 'complete' : challenge.status,
       partner_profile_url: `https://github.com/${challenge.candidate}`,
       partner_score: 80,
       metadata: []
-    })
+    });
   }
 
-  async getIssueMetadata (owner, repo, issue, key = null) {
+  async markChallengeCompleted(owner, repo, issue) {
+    
+    const req = https.request(`${this.options.url}/${owner}/${repo}/${issue}`, res => {
+      
+      console.log(`statusCode: ${res.statusCode}`);
+
+      res.on('data', d => {
+        process.stdout.write(d);
+      });
+    });
+
+    req.on('error', error => {
+      console.error(error);
+    });
+
+    req.end();
+  }
+
+  async getIssueMetadata(owner, repo, issue, key = null) {
 
     const body = (await this.octokit.issues.get({
       owner,
@@ -105,14 +136,14 @@ class Greenhouse {
       issue_number: issue
     })).data.body || '';
 
-    const match = body.match(/\n\n<!-- probot = (.*) -->/)
+    const match = body.match(/\n\n<!-- probot = (.*) -->/);
 
     if (match) {
-      let data = JSON.parse(match[1])
+      let data = JSON.parse(match[1]);
       let prefix = Object.keys(data)[0];
       data = data[prefix];
 
-      return key ? data && data[key] : data
+      return key ? data && data[key] : data;
     }
   }
 
@@ -128,7 +159,7 @@ class Greenhouse {
         const hash = crypto.createHash('sha512');
         if (crypto.timingSafeEqual(
           hash.copy().update(apiKey).digest(),
-          hash.copy().update(process.env.GREENHOUSE_API_KEY).digest()
+          hash.copy().update(this.options.apiKey).digest()
         )) {
           done(null, { apiKey });
         } else {
