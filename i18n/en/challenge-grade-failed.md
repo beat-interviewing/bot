@@ -1,5 +1,15 @@
 Unable to grade assignment. 
 
 ```
-{{{json error}}}
+{{{message}}}
 ```
+
+{{#with config}}
+<details>
+  <summary>Request</summary>
+
+```
+{{method}} {{{url}}}
+```
+</details>
+{{/with}}
