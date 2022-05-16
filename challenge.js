@@ -397,7 +397,7 @@ class Challenge {
    * @param {Context} context 
    * @param {Command} command 
    */
-  async grade() {
+  async grade(context, command) {
 
     const meta = metadata(context);
 
