@@ -111,17 +111,21 @@ class Greenhouse {
 
   async markChallengeCompleted(owner, repo, issue) {
 
-    const req = https.request(`${this.options.url}/${owner}/${repo}/${issue}`, res => {
+    const req = https.request(`${this.options.url}/${owner}/${repo}/${issue}`, { method: 'PATCH' }, (res) => {
 
-      log.info(res);
-
-      res.on('data', d => {
-        process.stdout.write(d);
+      let body;
+      res.on('data', data => {
+        body += data;
       });
+
+      req.on('end', () => {
+        log.info(body);
+      });
+
     });
 
     req.on('error', error => {
-      console.error(error);
+      log.error(error);
     });
 
     req.end();
