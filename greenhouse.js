@@ -109,29 +109,31 @@ class Greenhouse {
       metadata: []
     });
   }
-
-  async setChallengeStatusCompleted(req, res) {
-
+  
+  async patchChallengeStatus(req, res) {
+    
     let issueFqn = req.query.partner_interview_id;
     let [owner, repo, issue] = issueFqn.split('/');
 
     const challenge = await this.getIssueMetadata(owner, repo, issue, 'challenge');
 
+    log.info(challenge)
+
     try {
-      const res = await axios.patch(url, null, {
-        auth: {
-          username: this.options.username,
-          password: this.options.password,
-        }
-      });
-      log.info(res);
+      const res = await this.notifyChallengeStatusCompleted(challenge.greenhouseUrl)
+      return res.json(res);
     } catch (error) {
       return res.json({ error });
     }
+  }
 
-    res.json({ status: "ok" });
-
-
+  async notifyChallengeStatusCompleted(url) {
+    return await axios.patch(url, null, {
+      auth: {
+        username: this.options.username,
+        password: this.options.password,
+      }
+    });
   }
 
   async getIssueMetadata(owner, repo, issue, key = null) {
@@ -179,7 +181,7 @@ class Greenhouse {
     router.get('/challenges', this.listChallenges.bind(this));
     router.post('/challenges', this.createChallenge.bind(this));
     router.get('/challenges/status', this.getChallengeStatus.bind(this));
-    router.patch('/challenges/status', this.setChallengeStatusCompleted.bind(this));
+    router.patch('/challenges/status', this.patchChallengeStatus.bind(this));
   }
 }
 
