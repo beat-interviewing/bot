@@ -1,3 +1,3 @@
 /challenge @{{username}}
 
-_[{{ firstName }} {{ lastName }}]({{{ profileUrl }}}) <[{{{ email }}}]({{{ email }}})> via [Greenhouse]({{{ url }}})_
+_[{{ firstName }} {{ lastName }}]({{{ profileUrl }}}) <<{{{ email }}}>> via [Greenhouse]({{{ url }}})_

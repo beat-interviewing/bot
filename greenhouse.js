@@ -1,5 +1,5 @@
+const axios = require('axios').default;
 const log = require('./log');
-const https = require('https');
 const crypto = require('crypto');
 const bodyParser = require('body-parser');
 const passport = require('passport');
@@ -16,8 +16,9 @@ class Greenhouse {
     this.i18n = i18n;
 
     let defaultOptions = {
-      url: process.env.GREENHOUSE_URL,
       apiKey: process.env.GREENHOUSE_API_KEY,
+      username: process.env.GREENHOUSE_USERNAME,
+      password: process.env.GREENHOUSE_PASSWORD,
     };
 
     this.options = {
@@ -109,26 +110,28 @@ class Greenhouse {
     });
   }
 
-  async markChallengeCompleted(owner, repo, issue) {
+  async setChallengeStatusCompleted(req, res) {
 
-    const req = https.request(`${this.options.url}/${owner}/${repo}/${issue}`, { method: 'PATCH' }, (res) => {
+    let issueFqn = req.query.partner_interview_id;
+    let [owner, repo, issue] = issueFqn.split('/');
 
-      let body;
-      res.on('data', data => {
-        body += data;
+    const challenge = await this.getIssueMetadata(owner, repo, issue, 'challenge');
+
+    try {
+      const res = await axios.patch(url, null, {
+        auth: {
+          username: this.options.username,
+          password: this.options.password,
+        }
       });
+      log.info(res);
+    } catch (error) {
+      return res.json({ error });
+    }
 
-      req.on('end', () => {
-        log.info(body);
-      });
+    res.json({ status: "ok" });
 
-    });
 
-    req.on('error', error => {
-      log.error(error);
-    });
-
-    req.end();
   }
 
   async getIssueMetadata(owner, repo, issue, key = null) {
@@ -176,6 +179,7 @@ class Greenhouse {
     router.get('/challenges', this.listChallenges.bind(this));
     router.post('/challenges', this.createChallenge.bind(this));
     router.get('/challenges/status', this.getChallengeStatus.bind(this));
+    router.patch('/challenges/status', this.setChallengeStatusCompleted.bind(this));
   }
 }
 

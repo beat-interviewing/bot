@@ -91,6 +91,17 @@ class Challenge {
       config
     };
 
+    const match = context.payload.body.match(/via \[Greenhouse\]\((.*)\)/)
+    if (match) {
+      challenge = {
+        ...challenge,
+        ...{
+          greenhouse: true,
+          greenhouseUrl: match,
+        }
+      };
+    }
+
     try {
       await this.cloneRepo(challenge);
 
