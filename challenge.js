@@ -309,7 +309,7 @@ class Challenge {
       challenge: challenge
     });
 
-    if (challenge.status !== 'ended') {
+    if (challenge.status === 'created') {
       return await this.reply(context, 'challenge-review-not-ended');
     }
 
@@ -416,7 +416,7 @@ class Challenge {
     // final grade given by the reviewer to the assignment. 
     let grade = parseInt(command.arguments.trim());
 
-    if (challenge.status !== 'ended') {
+    if (challenge.status === 'created') {
       return await this.reply(context, 'challenge-review-not-ended');
     }
 

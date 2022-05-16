@@ -17,8 +17,6 @@ class Greenhouse {
 
     let defaultOptions = {
       url: process.env.GREENHOUSE_URL,
-      username: process.env.GREENHOUSE_USERNAME,
-      password: process.env.GREENHOUSE_PASSWORD,
       apiKey: process.env.GREENHOUSE_API_KEY,
     };
 
@@ -97,6 +95,7 @@ class Greenhouse {
   }
 
   async getChallengeStatus(req, res) {
+
     let issueFqn = req.query.partner_interview_id;
     let [owner, repo, issue] = issueFqn.split('/');
 
@@ -111,10 +110,10 @@ class Greenhouse {
   }
 
   async markChallengeCompleted(owner, repo, issue) {
-    
+
     const req = https.request(`${this.options.url}/${owner}/${repo}/${issue}`, res => {
-      
-      console.log(`statusCode: ${res.statusCode}`);
+
+      log.info(res);
 
       res.on('data', d => {
         process.stdout.write(d);
@@ -165,7 +164,7 @@ class Greenhouse {
         } else {
           done(null, false, { message: 'incorrect username or password' });
         }
-      }
+      }.bind(this)
     ));
 
     router.use(bodyParser.json());
