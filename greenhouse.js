@@ -128,7 +128,7 @@ class Greenhouse {
   }
 
   async notifyChallengeStatusCompleted(url) {
-    return await axios.patch(url, null, {
+    return axios.patch(url, null, {
       auth: {
         username: this.options.username,
         password: this.options.password,
