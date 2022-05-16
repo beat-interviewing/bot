@@ -22,11 +22,11 @@ module.exports = async (robot, { getRouter }) => {
   const i18n = new I18n('i18n', 'en');
   await i18n.load();
 
-  const challenge = new Challenge(octokit, i18n);
-  challenge.register(robot);
-
   const greenhouse = new Greenhouse(octokit, i18n);
   greenhouse.register(getRouter('/api/greenhouse'));
+
+  const challenge = new Challenge(octokit, greenhouse, i18n);
+  challenge.register(robot);
 
   // For more information on building apps:
   // https://probot.github.io/docs/

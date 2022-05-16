@@ -10,8 +10,9 @@ class Challenge {
    * @param {ProbotOctokit} octokit
    * @param {I18n} i18n
    */
-  constructor(octokit, i18n) {
+  constructor(octokit, greenhouse, i18n) {
     this.octokit = octokit;
+    this.greenhouse = greenhouse;
     this.i18n = i18n;
   }
 
@@ -35,7 +36,7 @@ class Challenge {
 
     // Normalize username by removing any leading @ symbol that may be present.
     candidate = candidate.replace(/^@/, '');
-    
+
     // If an assignment argument was not present, use the current repo as
     // fallback.
     if (!assignment) {
@@ -288,6 +289,7 @@ class Challenge {
   }
 
   /**
+   * Prepare assignment for review.
    * 
    * @param {Context} context 
    * @param {Command} command 
@@ -390,6 +392,59 @@ class Challenge {
   }
 
   /**
+   * Grade assignment.
+   * 
+   * @param {Context} context 
+   * @param {Command} command 
+   */
+  async grade() {
+
+    const meta = metadata(context);
+
+    log.info({
+      event: context.name,
+      command: command.name,
+      issue: context.issue(),
+    });
+
+    let challenge = await meta.get('challenge');
+    if (!challenge) {
+      return await this.reply(context, 'challenge-unknown');
+    }
+
+    // Input would be in the format `/grade <grade>` where `<grade>` is the 
+    // final grade given by the reviewer to the assignment. 
+    let grade = parseInt(command.arguments.trim());
+
+    if (challenge.status !== 'ended') {
+      return await this.reply(context, 'challenge-review-not-ended');
+    }
+
+    challenge = {
+      ...challenge,
+      ...{
+        status: 'graded',
+        grade: grade,
+        gradedAt: new Date().toISOString(),
+        gradedBy: context.payload.issue.user.login,
+      }
+    };
+
+    try { 
+      let {owner, repo, number} = context.issue();
+
+      await this.greenhouse.markChallengeCompleted(owner, repo, number);
+
+      await meta.set('challenge', challenge);
+
+      await this.reply(context, 'challenge-graded', challenge);
+    } catch (error) {
+      await this.reply(context, 'challenge-grade-failed', { error });
+    }
+  }
+
+  /**
+   * Delete assignment.
    * 
    * @param {Context} context 
    * @param {Command} command 
@@ -585,6 +640,7 @@ class Challenge {
     commands(robot, 'end', this.end.bind(this));
     commands(robot, 'join', this.join.bind(this));
     commands(robot, 'review', this.review.bind(this));
+    commands(robot, 'grade', this.grade.bind(this));
     commands(robot, 'delete', this.delete.bind(this));
     commands(robot, 'help', this.help.bind(this));
   }

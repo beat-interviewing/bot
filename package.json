@@ -20,6 +20,7 @@
     "minimatch": "^3.0.4",
     "passport": "^0.5.2",
     "passport-http": "^0.3.0",
+    "pino": "^7.11.0",
     "probot": "^11.0.1",
     "probot-commands": "^1.1.0",
     "probot-metadata": "^2.1.0"
