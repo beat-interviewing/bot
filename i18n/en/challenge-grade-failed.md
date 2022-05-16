@@ -1,3 +1,5 @@
 Unable to grade assignment. 
 
-{{>error}}
+```
+{{{json error}}}
+```
