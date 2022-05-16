@@ -452,7 +452,7 @@ class Challenge {
 
       await this.reply(context, 'challenge-graded', challenge);
     } catch (error) {
-      await this.reply(context, 'challenge-grade-failed', { error });
+      await this.reply(context, 'challenge-grade-failed', error);
     }
   }
 
