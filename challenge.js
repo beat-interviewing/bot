@@ -97,7 +97,7 @@ class Challenge {
         ...challenge,
         ...{
           greenhouse: true,
-          greenhouseUrl: match,
+          greenhouseUrl: match[1],
         }
       };
     }
