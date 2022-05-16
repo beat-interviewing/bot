@@ -91,7 +91,7 @@ class Challenge {
       config
     };
 
-    const match = context.payload.body.match(/via \[Greenhouse\]\((.*)\)/)
+    const match = context.payload.issue.body.match(/via \[Greenhouse\]\((.*)\)/)
     if (match) {
       challenge = {
         ...challenge,
