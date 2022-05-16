@@ -1,6 +1,7 @@
 const commands = require('probot-commands');
 const metadata = require('probot-metadata');
 const minimatch = require("minimatch");
+const { Greenhouse } = require('./greenhouse');
 const log = require('./log');
 
 class Challenge {
@@ -8,6 +9,7 @@ class Challenge {
   /**
    * 
    * @param {ProbotOctokit} octokit
+   * @param {Greenhouse} greenhouse
    * @param {I18n} i18n
    */
   constructor(octokit, greenhouse, i18n) {
@@ -91,7 +93,7 @@ class Challenge {
       config
     };
 
-    const match = context.payload.issue.body.match(/via \[Greenhouse\]\((.*)\)/)
+    const match = context.payload.issue.body.match(/via \[Greenhouse\]\((.*)\)/);
     if (match) {
       challenge = {
         ...challenge,
@@ -441,10 +443,10 @@ class Challenge {
       }
     };
 
-    try { 
-      let {owner, repo, number} = context.issue();
-
-      await this.greenhouse.markChallengeCompleted(owner, repo, number);
+    try {
+      if (challenge.greenhouse) {
+        await this.greenhouse.notifyChallengeStatusCompleted(challenge.greenhouseUrl);
+      }
 
       await meta.set('challenge', challenge);
 
