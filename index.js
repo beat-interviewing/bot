@@ -15,6 +15,12 @@ const octokit = new ProbotOctokit({
 /**
  * This is the main entrypoint to our Probot app
  * 
+ * For more information on building apps:
+ *  https://probot.github.io/docs/
+ * 
+ * To get your app running against GitHub, see:
+ *  https://probot.github.io/docs/development/
+ * 
  * @param {Probot} robot
  */
 module.exports = async (robot, { getRouter }) => {
@@ -27,10 +33,4 @@ module.exports = async (robot, { getRouter }) => {
 
   const challenge = new Challenge(octokit, greenhouse, i18n);
   challenge.register(robot);
-
-  // For more information on building apps:
-  // https://probot.github.io/docs/
-
-  // To get your app running against GitHub, see:
-  // https://probot.github.io/docs/development/
 };
