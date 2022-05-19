@@ -109,18 +109,16 @@ class Greenhouse {
       metadata: []
     });
   }
-  
+
   async patchChallengeStatus(req, res) {
-    
+
     let issueFqn = req.query.partner_interview_id;
     let [owner, repo, issue] = issueFqn.split('/');
 
     const challenge = await this.getIssueMetadata(owner, repo, issue, 'challenge');
 
-    log.info(challenge)
-
     try {
-      const res = await this.notifyChallengeStatusCompleted(challenge.greenhouseUrl)
+      const res = await this.notifyChallengeStatusCompleted(challenge.greenhouseUrl);
       return res.json(res);
     } catch (error) {
       return res.json({ error });
@@ -164,7 +162,7 @@ class Greenhouse {
 
     passport.use(new BasicStrategy(
       function (apiKey, _, done) {
-        log.info({msg: "http basic auth", apiKey})
+        log.debug({ msg: "Authenticated", user: apiKey });
         const hash = crypto.createHash('sha512');
         if (crypto.timingSafeEqual(
           hash.copy().update(apiKey).digest(),
@@ -178,6 +176,10 @@ class Greenhouse {
     ));
 
     router.use(bodyParser.json());
+    router.use((req, res, next) => {
+      log.debug(req.headers)
+    })
+    router.use(passport.initialize());
     router.use(passport.authenticate('basic', { session: false }));
     router.get('/challenges', this.listChallenges.bind(this));
     router.post('/challenges', this.createChallenge.bind(this));
