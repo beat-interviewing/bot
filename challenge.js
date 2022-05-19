@@ -445,6 +445,10 @@ class Challenge {
 
     try {
       if (challenge.greenhouse) {
+        log.debug({
+          msg: "Notifying greenhouse that test is completed", 
+          url: challenge.greenhouseUrl 
+        })
         await this.greenhouse.notifyChallengeStatusCompleted(challenge.greenhouseUrl);
       }
 
