@@ -439,7 +439,7 @@ class Challenge {
         status: 'graded',
         grade: grade,
         gradedAt: new Date().toISOString(),
-        gradedBy: context.payload.issue.user.login,
+        gradedBy: context.payload.comment.user.login,
       }
     };
 
