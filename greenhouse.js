@@ -2,8 +2,6 @@ const axios = require('axios').default;
 const log = require('./log');
 const crypto = require('crypto');
 const bodyParser = require('body-parser');
-const passport = require('passport');
-const BasicStrategy = require('passport-http').BasicStrategy;
 
 class Greenhouse {
 
@@ -153,6 +151,47 @@ class Greenhouse {
     }
   }
 
+  async authentication(req, res, next) {
+
+    let fail = (err) => {
+      res.set('WWW-Authenticate', `Basic realm="Greenhouse"`);
+      res.status(401).json({ error: err });
+    };
+
+    log.debug(req.headers);
+
+    var authorization = req.headers['authorization'];
+    if (!authorization) {
+      return fail('missing authorization header');
+    }
+
+    var parts = authorization.split(' ');
+    if (parts.length < 2) {
+      return fail('invalid authentication header');
+    }
+
+    let scheme = parts[0];
+    if (!/Basic/i.test(scheme)) {
+      return fail('invalid authentication scheme');
+    }
+
+    let [apiKey, _] = Buffer.from(parts[1], 'base64').toString().split(':');
+    if (apiKey != this.options.apiKey) { }
+
+    const hash = crypto.createHash('sha512');
+
+    if (!crypto.timingSafeEqual(
+      hash.copy().update(apiKey).digest(),
+      hash.copy().update(this.options.apiKey).digest()
+    )) {
+      return fail('incorrect username or password');
+    }
+
+    req.user = apiKey;
+
+    next();
+  }
+
   /**
    * Registers http endpoints for Greenhouse webhooks
    * 
@@ -160,27 +199,8 @@ class Greenhouse {
    */
   register(router) {
 
-    passport.use(new BasicStrategy(
-      function (apiKey, _, done) {
-        log.debug({ msg: "Authenticated", user: apiKey });
-        const hash = crypto.createHash('sha512');
-        if (crypto.timingSafeEqual(
-          hash.copy().update(apiKey).digest(),
-          hash.copy().update(this.options.apiKey).digest()
-        )) {
-          done(null, { apiKey });
-        } else {
-          done(null, false, { message: 'incorrect username or password' });
-        }
-      }.bind(this)
-    ));
-
     router.use(bodyParser.json());
-    router.use((req, res, next) => {
-      log.debug(req.headers)
-    })
-    router.use(passport.initialize());
-    router.use(passport.authenticate('basic', { session: false }));
+    router.use(this.authentication.bind(this));
     router.get('/challenges', this.listChallenges.bind(this));
     router.post('/challenges', this.createChallenge.bind(this));
     router.get('/challenges/status', this.getChallengeStatus.bind(this));
