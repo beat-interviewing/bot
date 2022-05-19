@@ -116,10 +116,13 @@ class Greenhouse {
     const challenge = await this.getIssueMetadata(owner, repo, issue, 'challenge');
 
     try {
-      const res = await this.notifyChallengeStatusCompleted(challenge.greenhouseUrl);
-      return res.json(res);
+      await this.notifyChallengeStatusCompleted(challenge.greenhouseUrl);
+      return res.sendStatus(204);
     } catch (error) {
-      return res.json({ error });
+      return res.status(400).send({
+        message: error.message,
+        status: error.status
+      });
     }
   }
 
