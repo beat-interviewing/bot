@@ -54,7 +54,7 @@ class I18n {
 
   render(message, context) {
     const template = this.templates[message];
-    log.info({ template: template });
+    log.debug({ template: template });
     return template(context);
   }
 }
