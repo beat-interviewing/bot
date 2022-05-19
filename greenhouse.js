@@ -108,7 +108,7 @@ class Greenhouse {
         "Started At": challenge.createdAt,
         "Graded At": challenge.gradedAt,
         "Graded By": challenge.gradedBy,
-        "Repository": `https://github.com/beat-interviewing/${challenge.repoOwner}/${challenge.repo}`
+        "Repository": `https://github.com/${challenge.repoOwner}/${challenge.repo}`
       }]
     });
   }
