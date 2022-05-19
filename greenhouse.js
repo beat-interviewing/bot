@@ -164,6 +164,7 @@ class Greenhouse {
 
     passport.use(new BasicStrategy(
       function (apiKey, _, done) {
+        log.info({msg: "http basic auth", apiKey})
         const hash = crypto.createHash('sha512');
         if (crypto.timingSafeEqual(
           hash.copy().update(apiKey).digest(),
