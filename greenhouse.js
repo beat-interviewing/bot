@@ -48,8 +48,8 @@ class Greenhouse {
     });
 
     res.json(data.items.map(i => ({
-        "partner_test_id": i.full_name,
-        "partner_test_name": i.description
+      "partner_test_id": i.full_name,
+      "partner_test_name": i.description
     })));
   }
 
@@ -112,19 +112,23 @@ class Greenhouse {
     let issueFqn = req.query.partner_interview_id;
     let [owner, repo, issue] = issueFqn.split('/');
 
-    const challenge = await this.getIssueMetadata(owner, repo, issue, 'challenge');
+    try {
+      const challenge = await this.getIssueMetadata(owner, repo, issue, 'challenge');
 
-    return res.json({
-      partner_status: challenge.status === 'graded' ? 'complete' : challenge.status,
-      partner_profile_url: `https://github.com/${challenge.candidate}`,
-      partner_score: 80,
-      metadata: [{
-        "Started At": challenge.createdAt,
-        "Graded At": challenge.gradedAt,
-        "Graded By": challenge.gradedBy,
-        "Repository": `https://github.com/${challenge.repoOwner}/${challenge.repo}`
-      }]
-    });
+      return res.json({
+        partner_status: challenge.status === 'graded' ? 'complete' : challenge.status,
+        partner_profile_url: `https://github.com/${challenge.candidate}`,
+        partner_score: 80,
+        metadata: [{
+          "Started At": challenge.createdAt,
+          "Graded At": challenge.gradedAt,
+          "Graded By": challenge.gradedBy,
+          "Repository": `https://github.com/${challenge.repoOwner}/${challenge.repo}`
+        }]
+      });
+    } catch (error) {
+      return res.status(400).json({ error });
+    }
   }
 
   async patchChallengeStatus(req, res) {
