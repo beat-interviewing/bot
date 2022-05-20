@@ -23,6 +23,22 @@ class Greenhouse {
       ...defaultOptions,
       ...options
     };
+
+    this.http = axios.create();
+    this.http.interceptors.request.use(req => {
+      log.debug({ msg: 'request', req });
+      return req;
+    }, error => {
+      log.error({ msg: 'request error', error: error.toString() });
+      return Promise.reject(error);
+    });
+    this.http.interceptors.response.use(res => {
+      log.debug({ msg: 'response', res });
+      return res;
+    }, error => {
+      log.error({ msg: 'response error', error: error.toString() });
+      return Promise.reject(error);
+    });
   }
 
   async listChallenges(req, res) {
@@ -31,12 +47,10 @@ class Greenhouse {
       q: 'org:beat-interviewing+topic:greenhouse'
     });
 
-    res.json(data.items.map(i => {
-      return {
+    res.json(data.items.map(i => ({
         "partner_test_id": i.full_name,
         "partner_test_name": i.description
-      };
-    }));
+    })));
   }
 
   async createChallenge(req, res) {
@@ -132,12 +146,17 @@ class Greenhouse {
   }
 
   async notifyChallengeStatusCompleted(url) {
-    return axios.patch(url, null, {
+    return this.http.patch(url, null, {
       auth: {
         username: this.options.username,
         password: this.options.password,
       }
     });
+  }
+
+  async postError(req, res) {
+    log.error(req.body);
+    res.sendStatus(204);
   }
 
   async getIssueMetadata(owner, repo, issue, key = null) {
@@ -165,8 +184,6 @@ class Greenhouse {
       res.set('WWW-Authenticate', `Basic realm="Greenhouse"`);
       res.status(401).json({ error: err });
     };
-
-    log.debug(req.headers);
 
     var authorization = req.headers['authorization'];
     if (!authorization) {
@@ -213,6 +230,7 @@ class Greenhouse {
     router.post('/challenges', this.createChallenge.bind(this));
     router.get('/challenges/status', this.getChallengeStatus.bind(this));
     router.patch('/challenges/status', this.patchChallengeStatus.bind(this));
+    router.post('/errors', this.postError.bind(this));
   }
 }
 

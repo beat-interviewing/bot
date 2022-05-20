@@ -4,21 +4,11 @@ const express = require("express");
 const { I18n } = require("../i18n");
 const { Greenhouse } = require("../greenhouse");
 
-jest.mock('axios');
+// jest.mock('axios');
 
 describe("Greenhouse", () => {
 
   const octokit = new ProbotOctokit();
-
-  octokit.search.repos = jest.fn(async () => {
-    data: {
-      items: [
-        { full_name: "foo/foo", description: "Foo" },
-        { full_name: "bar/bar", description: "Bar" },
-      ];
-    }
-  });
-
 
   const i18n = new I18n('i18n', 'en');
 
@@ -35,8 +25,9 @@ describe("Greenhouse", () => {
     // normal circumstances this method receives a URL as an argument and issues
     // a PATCH while supplying Basic Authentication credentials.
     // 
-    // See: https://jestjs.io/docs/mock-functions#mocking-modules
-    axios.patch.mockResolvedValue({});
+    // See: https://jestjs.io/docs/mock-functions#mock-return-values
+    greenhouse.http.patch = jest.fn();
+    greenhouse.http.patch.mockResolvedValue({});
 
     // This URL is provided via the POST /challenges endpoint. Greenhouse will
     // issue this request
@@ -52,6 +43,21 @@ describe("Greenhouse", () => {
 
   test("listChallenges", async () => {
 
+    // Listing challenges relies on the GitHub API to list repositories in our
+    // organization. We therefore mock the octokit client to avoid network calls
+    octokit.search.repos = jest.fn();
+    octokit.search.repos.mockResolvedValue({
+      data: {
+        items: [
+          { full_name: "foo/foo", description: "Foo" },
+          { full_name: "bar/bar", description: "Bar" },
+        ]
+      }
+    });
+
+    // A stub implementation a route's response object. A handler typically 
+    // receives two arguments, a request and a response. The latter allows the 
+    // handler to manipulate the response being sent back to the client.
     const res = {
       json: jest.fn()
     };
@@ -59,12 +65,12 @@ describe("Greenhouse", () => {
     try {
       await greenhouse.listChallenges(null, res);
       expect(res.json.mock.calls.length).toEqual(1);
-      // console.log(res.json.mock.results)
-      // expect(res.json.mock.results.length).toEqual(2);
-
-      // expect(res.json.mock.results[0][0].full_name).toEqual('foo/foo');
+      const data = res.json.mock.calls[0][0];
+      expect(data[0].partner_test_id).toEqual('foo/foo');
+      expect(data[0].partner_test_name).toEqual('Foo');
+      expect(data[1].partner_test_id).toEqual('bar/bar');
+      expect(data[1].partner_test_name).toEqual('Bar');
     } catch (error) {
-      console.log(error);
       expect(error).toBeNull();
     }
   });
