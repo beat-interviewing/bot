@@ -119,12 +119,12 @@ class Greenhouse {
         partner_status: challenge.status === 'graded' ? 'complete' : challenge.status,
         partner_profile_url: `https://github.com/${challenge.candidate}`,
         partner_score: 80,
-        metadata: [{
+        metadata: {
           "Started At": challenge.createdAt,
           "Graded At": challenge.gradedAt,
           "Graded By": challenge.gradedBy,
           "Repository": `https://github.com/${challenge.repoOwner}/${challenge.repo}`
-        }]
+        }
       });
     } catch (error) {
       return res.status(400).json({ error });
