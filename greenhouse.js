@@ -41,6 +41,22 @@ class Greenhouse {
     });
   }
 
+  /**
+   * List Tests
+   * 
+   * Greenhouse will first need to retrieve the list of tests from the
+   * Assessment Partner using the list_tests API endpoint. We will show the list
+   * of available tests to the user, who will to select the appropriate test for
+   * a given candidate.
+   * 
+   * Greenhouse will make a GET request to the list_tests endpoint specified by
+   * the Assessment Partner.
+   * 
+   * See: https://developers.greenhouse.io/assessment.html#list-tests
+   * 
+   * @param {*} req 
+   * @param {*} res 
+   */
   async listChallenges(req, res) {
 
     const { data } = await this.octokit.search.repos({
@@ -53,6 +69,36 @@ class Greenhouse {
     })));
   }
 
+  /**
+   * Send Test
+   * 
+   * When a Greenhouse user sends a test to a candidate, Greenhouse will send a
+   * request to the Assessment Partner’s send_test API endpoint. The Assessment
+   * Partner will then email the specified candidate the specified test.
+   * 
+   * Greenhouse will initiate the process by sending a POST request to the
+   * send_test endpoint specified by the Assessment Partner. The body of the
+   * POST request will contain a JSON payload.
+   * 
+   *  {
+   *    "partner_test_id": "12345",
+   *    "candidate": {
+   *      "first_name": "Harry",
+   *      "last_name": "Potter",
+   *      "resume_url": "https://hogwarts.com/resume",
+   *      "phone_number": "123-456-7890",
+   *      "email": "hpotter@hogwarts.edu",
+   *      "greenhouse_profile_url": "https://app.greenhouse.io/people/17681532?application_id=26234709"
+   *    },
+   *    "url": "https://app.greenhouse.io/integrations/testing_partners/take_home_tests/12345"
+   *  }
+   * 
+   * See: https://developers.greenhouse.io/assessment.html#send-test
+   * 
+   * @param {*} req 
+   * @param {*} res 
+   * @returns 
+   */
   async createChallenge(req, res) {
 
     let {
@@ -107,6 +153,17 @@ class Greenhouse {
     return commits.items[0].author.login;
   }
 
+  /**
+   * Test Status
+   * 
+   * Tells Greenhouse the current status of a take home test.
+   * 
+   * See: https://developers.greenhouse.io/assessment.html#test-status
+   * 
+   * @param {*} req 
+   * @param {*} res 
+   * @returns 
+   */
   async getChallengeStatus(req, res) {
 
     let issueFqn = req.query.partner_interview_id;
@@ -132,6 +189,20 @@ class Greenhouse {
     }
   }
 
+  /**
+   * Mark Test as Completed
+   * 
+   * When a candidate completes a test, send this request to the URL sent in the
+   * initial Send Test request to signal Greenhouse that the test has been
+   * completed. Upon this, Greenhouse will send a request to your Test Status
+   * endpoint.
+   * 
+   * See: https://developers.greenhouse.io/assessment.html#patch-mark-test-as-completed
+   * 
+   * @param {*} req 
+   * @param {*} res 
+   * @returns 
+   */
   async patchChallengeStatus(req, res) {
 
     let issueFqn = req.query.partner_interview_id;
@@ -143,7 +214,7 @@ class Greenhouse {
       await this.notifyChallengeStatusCompleted(challenge.greenhouseUrl);
       return res.sendStatus(204);
     } catch (error) {
-      return res.status(400).send({
+      return res.status(400).json({
         message: error.message,
         status: error.status
       });
@@ -159,9 +230,22 @@ class Greenhouse {
     });
   }
 
+  /**
+   * Greenhouse Response Error
+   * 
+   * When Greenhouse receives a malformed response for any of Assessment
+   * Partner’s API endpoints, we would like to report the errors to the
+   * Assessment Partner. As such, each Assessment Partner should provide an API
+   * endpoint to ingest this information.
+   * 
+   * See: https://developers.greenhouse.io/assessment.html#response-error
+   * 
+   * @param {*} req 
+   * @param {*} res 
+   */
   async postError(req, res) {
     log.error(req.body);
-    res.sendStatus(204);
+    res.status(200).json({ status: 200 });
   }
 
   async getIssueMetadata(owner, repo, issue, key = null) {
@@ -183,6 +267,24 @@ class Greenhouse {
     }
   }
 
+  /**
+   * Authentication middleware adapted from Passport-HTTP.
+   * 
+   * The reason for the in-line implementation is that Greenhouse omits the
+   * password field from basic authentication credentials. Instead it encodes
+   * credentials as base64("<username>:").
+   * 
+   * Passport-HTTP fails authentication if the request is missing a password.
+   * 
+   * See: 
+   *  - http://www.passportjs.org/packages/passport-http/
+   *  - https://github.com/jaredhanson/passport-http
+   * 
+   * @param {*} req 
+   * @param {*} res 
+   * @param {*} next 
+   * @returns 
+   */
   async authentication(req, res, next) {
 
     let fail = (err) => {
