@@ -3,6 +3,7 @@ const metadata = require('probot-metadata');
 const minimatch = require("minimatch");
 const { Greenhouse } = require('./greenhouse');
 const log = require('./log');
+const { Context } = require('probot');
 
 class Challenge {
 
@@ -55,7 +56,7 @@ class Challenge {
 
     // Check whether a challenge has already been created in this issue. If so
     // reject the request and instruct the caller to create a new issue.
-    let challenge = await meta.get('challenge');
+    let challenge = await this.getMetadata(context);
     if (challenge && challenge.repo !== '') {
       return await this.reply(context, 'challenge-exists', {
         repoOwner: challenge.repoOwner,
@@ -82,6 +83,7 @@ class Challenge {
 
     log.debug({ config: config.challenge });
 
+    // Collect the necessary information to store as metadata for this challenge
     challenge = {
       repoOwner,
       repo,
@@ -93,6 +95,13 @@ class Challenge {
       config
     };
 
+    // Challenges created via Greenhouse will contain text in the format:
+    // 
+    //  via [Greenhouse](https://app.greenhouse.io/...)
+    // 
+    // We'll store this URL in the challenge metadata. When the `/grade` command
+    // is called, we will issue a PATCH request to Greenhouse at this URL to 
+    // inform that the assignment is graded.
     const match = context.payload.issue.body.match(/via \[Greenhouse\]\((.*)\)/);
     if (match) {
       challenge = {
@@ -446,9 +455,9 @@ class Challenge {
     try {
       if (challenge.greenhouse) {
         log.debug({
-          msg: "Notifying greenhouse that test is completed", 
-          url: challenge.greenhouseUrl 
-        })
+          msg: "Notifying greenhouse that test is completed",
+          url: challenge.greenhouseUrl
+        });
         await this.greenhouse.notifyChallengeStatusCompleted(challenge.greenhouseUrl);
       }
 
@@ -497,6 +506,35 @@ class Challenge {
     }
   }
 
+  /**
+   * Retrieves issue metadata.
+   * 
+   * @param {Context} context 
+   * @returns {Promise<any>}
+   */
+  async getMetadata(context) {
+    return metadata(context).get('challenge');
+  }
+
+  /**
+   * Saves issue metadata.
+   * 
+   * @param {Context} context 
+   * @param {Object} meta 
+   * @returns {Promise<any>}
+   */
+  async setMetadata(context, meta) {
+    return metadata(context).set('challenge', meta);
+  }
+
+  /**
+   * Gets the content of files from a git repository at a given ref/branch.
+   * 
+   * @param {String} owner
+   * @param {String} repo 
+   * @param {String} ref 
+   * @returns 
+   */
   async getFiles(owner, repo, ref) {
 
     const { data: reference } = await this.octokit.git.getRef({
@@ -543,6 +581,14 @@ class Challenge {
     return files;
   }
 
+  /**
+   * Puts file contents to a git repository at a given ref/branch.
+   * 
+   * @param {String} owner 
+   * @param {String} repo 
+   * @param {String} ref 
+   * @param {Array}  files 
+   */
   async putFiles(owner, repo, ref, files) {
 
     let tree = [];
@@ -592,10 +638,23 @@ class Challenge {
       repo,
       ref: `heads/${ref}`,
       sha: newCommit.sha,
-      // force: true
     });
   }
 
+  /**
+   * Copies file contents between the branches of a git repository. 
+   * 
+   * Under the hood this method makes use of the getFiles/putFiles methods to
+   * perform the necessary.
+   * 
+   * @param {*} owner 
+   * @param {*} assignment 
+   * @param {*} repo 
+   * @param {*} head 
+   * @param {*} base 
+   * @param {*} paths 
+   * @returns 
+   */
   async copyFiles(owner, assignment, repo, head, base, paths) {
 
     let files = (await this.getFiles(
@@ -611,7 +670,7 @@ class Challenge {
       return false;
     });
 
-    // log.info({ files: files.map(file => file.path) });
+    log.debug({ files: files.map(file => file.path) });
 
     await this.putFiles(
       owner,
@@ -638,6 +697,12 @@ class Challenge {
     });
   }
 
+  async reply(context, template, view) {
+    return await context.octokit.issues.createComment(context.issue({
+      body: this.i18n.render(template, view),
+    }));
+  }
+
   /**
    * 
    * @param {Context} context 
@@ -660,12 +725,6 @@ class Challenge {
     commands(robot, 'grade', this.grade.bind(this));
     commands(robot, 'delete', this.delete.bind(this));
     commands(robot, 'help', this.help.bind(this));
-  }
-
-  async reply(context, template, view) {
-    return await context.octokit.issues.createComment(context.issue({
-      body: this.i18n.render(template, view),
-    }));
   }
 };
 
