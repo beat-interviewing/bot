@@ -1,83 +1,43 @@
 # Bot
 
-This is a proof of concept exploring the automation of interviewing workflows.
-It is intended to improve the time taken by reviewers to grade take-home
-assignments, and make it easier on candidates when submitting them.
+Bot is a GitHub App which enables the automation of interviewing workflows.
 
-## Setup
-
-```sh
-npm install
-npm start
-```
-
-## Docker
-
-```sh
-docker build -t bot .
-docker run -e APP_ID=<app-id> -e PRIVATE_KEY=<pem-value> bot
-```
+In some ways, it can be a viable replacement for expensive technical assessment
+or remote interview platforms. By leveraging GitHub's functionality, technical
+interviews happen in a platform more familiar to developers.
 
 ## Usage
 
-The bot listens for slash commands posted on issues or pull requests in
-repositories of the [beat-interviewing](https://github.com/beat-interviewing)
-organization.
+Bot listens and responds to slash commands present in issues or issue comments
+of select repositories of an organization. With these commands, interviewers are
+able to **create an assignment** for a candidate (a GitHub repository),
+**invite** candidates as collaborators, and after conducting the interview,
+**review and grade** assignments.
 
-As an example, lets prepare the coding challenge for
-[@robpike](https://github.com/robpike). He aced the recruiter screen but now its
-time to show us if he can handle our take-home assignment.
+Read [the docs](docs/index.md) for a detailed walk through.
 
-### Challenge a Candidate
+## Contributing
 
-To kick off the process, [create an
-issue](https://github.com/beat-interviewing/interview/issues/new). The title
-wont't matter for now, but in the body we'll use the `/challenge` slash command.
+Bot is built in **Node.js** and the wonderful
+[**Probot**](https://probot.github.io/docs/) framework. Install any dependencies
+with `npm`.
 
-Where `<candidate>` is the GitHub username of the candidate and `<assignment>`
-should match a repository under the
-[beat-interviewing](https://github.com/beat-interviewing) organization. This
-repository **must** be a template repository.
+```sh
+npm install
+```
 
-![challenge](docs/img/challenge.png)
+Running Bot locally should be easy! Set the environment variables described in
+[.env.example](.env.example). During first run, many of these variables can be
+discovered by Probot itself. But make sure to modify [app.yml](app.yml) to
+customize your instance.
 
-At this point the candidate should have received an invitation to collaborate on
-the newly created repository.
+```sh
+npm start
+```
 
-### Ending the Challenge
+Bot should be alive and kicking at port `8080`!
 
-Once the candidate is given sufficient time to complete the assignment, we can 
-end the assignment by revoking their access to the repository.
-
-![challenge-end](docs/img/challenge-end.png)
-
-The candidate no longer has access to the challenge and is therefore unable to 
-commit any new changes.
-
-### Reviewing the Code
-
-To assist reviewers in evaluating the assignment, the `/review` command comes in
-handy. It can copy files from the assignment template repository to the 
-candidates repository. These files may enable automation in the form of GitHub 
-Actions, or verification scripts.
-
-![challenge-review](docs/img/challenge-review.png)
-
-In the example pictured above, several files were committed to the candidates
-assignment. For the
-[`go`](https://github.com/beat-interviewing/go-take-home-assignment/tree/review) challenge,
-this includes the expected output, some automation workflows and scripts that
-help verify the solutions correctness and timing.
-
-Let's head over to the actions tab and inspect the output of these checks.
-
-![challenge-review-checks](docs/img/challenge-review-checks.png)
-
-From these checks we can see that the candidates submission had three mistakes
-in the resulting output as highlighted in red by the diff tool. Additionally the
-process took 11s to complete, which may be a little on the slow side.
-
-### Where next?
+## Where next?
 
 This project is in active development. Therefore new commands may be added, or
 existing commands may be modified. For a full list of the supported
