@@ -1,8 +1,8 @@
 const axios = require('axios');
 const { ProbotOctokit } = require("probot");
 const express = require("express");
-const { I18n } = require("../i18n");
-const { Greenhouse } = require("../greenhouse");
+const { I18n } = require("../lib/i18n");
+const { Greenhouse } = require("../lib/greenhouse");
 
 // jest.mock('axios');
 
@@ -10,7 +10,7 @@ describe("Greenhouse", () => {
 
   const octokit = new ProbotOctokit();
 
-  const i18n = new I18n('i18n', 'en');
+  const i18n = new I18n('en');
 
   const greenhouse = new Greenhouse(octokit, i18n);
   greenhouse.register(express.Router());

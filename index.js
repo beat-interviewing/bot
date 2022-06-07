@@ -1,6 +1,6 @@
-const { Challenge } = require('./challenge');
-const { I18n } = require('./i18n');
-const { Greenhouse } = require('./greenhouse');
+const { Challenge } = require('./lib/challenge');
+const { I18n } = require('./lib/i18n');
+const { Greenhouse } = require('./lib/greenhouse');
 const { ProbotOctokit, Probot } = require("probot");
 require('dotenv').config();
 
@@ -25,7 +25,7 @@ const octokit = new ProbotOctokit({
  */
 module.exports = async (robot, { getRouter }) => {
 
-  const i18n = new I18n('i18n', 'en');
+  const i18n = new I18n('en');
   await i18n.load();
 
   const greenhouse = new Greenhouse(octokit, i18n);
