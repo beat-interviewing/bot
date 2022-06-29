@@ -8,9 +8,10 @@ interviews happen in a platform more familiar to developers.
 
 Technical assessments are essentially GitHub template repositories. There are no
 limitations imposed from Bot as to the nature or content of the assessment, so
-you are free to customize as much as you need.
+you are free to customize as much as you need. Out of the box Bot works well for
+live coding assignments, take-home coding assignments, code review assignments.
 
-## Overview
+## How it works
 
 Bot listens and responds to slash commands present in issues or issue comments
 of select repositories of an organization. With these commands, interviewers are
@@ -18,18 +19,19 @@ able to **create an assignment** for a candidate (a GitHub repository),
 **invite** candidates as collaborators, and after conducting the interview,
 **review and grade** assignments.
 
-In its simplest form, to challenge Github user `@candidate` to take our FizzBuzz 
-assessment `beat-interviewing/example-assessment`, Bot can create the 
-repository `beat-interviewing/example-assessment-candidate-xyz`. It can then 
-grant or revoke access to the repository. And finally, support in reviewing and 
-grading the candidates submission.
+## Anatomy of an assessment
 
-Coding assignments may be a straightforward use case for Bot, but where it can
-really shine is with assessments that require some initial setup. A code review
-type of assessment was strong motivation for the development of this tool.
+Assessments are Github _template_ repositories. They may provide scaffolding,
+tests, benchmarks or automation.
 
-Check out [the docs](docs/index.md) for details on setting Bot up in your 
-organization.
+We cover a variety of use cases with the example assessments below:
+
+- [Coding Assignment](/docs/examples/coding-assignment.md)
+- [Take-Home Assignment](/docs/examples/take-home-assignment.md)
+- [Code Review Assignment](/docs/examples/code-review-assignment.md)
+
+For a deep dive into each command please refer to the [reference
+documentation](docs/README.md).
 
 ## Contributing
 
