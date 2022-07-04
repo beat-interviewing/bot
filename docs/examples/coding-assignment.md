@@ -1,12 +1,14 @@
 # Coding Assignment
 
-A coding assessment is a relatively short interview typically carried out live,
-where a candidate is presented with a problem and is expected to code its
-solution, accompanied by an interviewer.
+A coding assessment is a short technical interview that is typically carried out
+live, where the candidate is accompanied by an interviewer and is asked to solve 
+a coding challenge.
 
-We'll use
+Throughout this guide we'll use
 [beat-interviewing/example-coding-assignment](https://github.com/beat-interviewing/example-coding-assignment)
-throughout this guide.
+as the coding assignment. The assignment requires candidates to implement a 
+function which when called returns the next number in the Fibonacci sequence. In 
+practice we encourage assignments that test on-the-job knowledge.
 
 ## Creating the challenge
 
