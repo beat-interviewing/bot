@@ -46,4 +46,21 @@ describe("I18n.render", () => {
     expect(message).toMatch('unable to add @foo as a collaborator');
     expect(message).toMatch(/Error: Foo/);
   });
+  
+  test("challenge-graded", async () => {
+    const message = i18n.render('challenge-graded', {
+      candidate: 'rsc',
+      repoOwner: 'foo',
+      repo: 'foo-rsc-xyz',
+      assignment: 'foo',
+      grade: 10,
+      gradedBy: 'bob',
+      isGradePassing: false
+    });
+    expect(message).toMatch('_**Candidate:**_ @rsc');
+    expect(message).toMatch('_**Repository:**_ [`foo/foo-rsc-xyz`](https://github.com/foo/foo-rsc-xyz)');
+    expect(message).toMatch('_**Assignment:**_ [`foo/foo`](https://github.com/foo/foo)');
+    expect(message).toMatch('_**Grade:**_ 10');
+    expect(message).toMatch('_**Pass:**_ ❌');
+  });
 });
